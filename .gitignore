@@ -1,0 +1,91 @@
+# macOS
+.DS_Store
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded/generated runtime data
+uploads/
+storage/
+
+# OS/editor temporary files
+*.swp
+*.swo
+*~
+
+# Python coverage
+.coverage
+htmlcov/
+
+# Secrets / credentials
+*.pem
+*.key
+credentials.json
+service-account*.json
+
+
+# Generated AI/vector database
+SIH_AI/.chroma_db/
+
+# Runtime/process files
+*.pid
+
+# Local authentication/test tokens
+user_token.txt
+*_token.txt
+
+# Generated test artifacts
+SIH_FRONTEND/test-results/
+SIH_FRONTEND/analysis_result.json
+
+# Temporary development scripts
+e2e_auth_test.py
+update_newscan.py
+update_newscan_2.py
+
+# Scratch/debug scripts
+SIH_BACKEND/backend/scratch/
+
+# Local inspection/test images
+SIH_AI/*_Back.jpeg
+SIH_AI/*_Back_processed.jpg

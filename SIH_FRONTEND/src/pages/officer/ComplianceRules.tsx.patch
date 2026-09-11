@@ -1,0 +1,147 @@
+--- src/pages/officer/ComplianceRules.tsx
++++ src/pages/officer/ComplianceRules.tsx
+@@ -2,6 +2,7 @@
+ import Icon from '../../components/ui/Icon';
++import apiClient from '../../api/client';
+ 
+ const ComplianceRules: React.FC = () => {
+   const [activeFilter, setActiveFilter] = useState('all');
+   const [searchQuery, setSearchQuery] = useState('');
+   
+   // Example rule selection state
+   const [selectedRuleId, setSelectedRuleId] = useState('rule-6-1-h');
++  
++  // Modal State
++  const [modalState, setModalState] = useState<{ type: string, rule: any, result?: string } | null>(null);
++  const [isSimulating, setIsSimulating] = useState(false);
++  const [isDownloading, setIsDownloading] = useState(false);
+ 
+   const ruleData = {
+@@ -52,6 +56,58 @@
+ 
+   const selectedRule = ruleData[selectedRuleId as keyof typeof ruleData];
++
++  const handleSimulate = async () => {
++    if (isSimulating) return;
++    setIsSimulating(true);
++    try {
++      const res = await apiClient.get('/inspections?page_size=1');
++      if (res.data?.items?.length > 0) {
++        const latestId = res.data.items[0].id;
++        const detailRes = await apiClient.get(`/inspections/${latestId}`);
++        const inspection = detailRes.data;
++        
++        let result = "NOT APPLICABLE";
++        
++        if (inspection.violations?.some((v: any) => v.rule_id === selectedRuleId)) {
++          result = "FAILED";
++        } else if (inspection.applicable_rule_ids?.includes(selectedRuleId)) {
++          result = "PASSED";
++        }
++        
++        setModalState({ type: 'simulate', rule: selectedRule, result: `Result against latest inspection (${latestId}): ${result}` });
++      } else {
++        setModalState({ type: 'simulate', rule: selectedRule, result: "No inspections found to simulate against." });
++      }
++    } catch (err) {
++      console.error(err);
++      setModalState({ type: 'simulate', rule: selectedRule, result: "Failed to fetch inspection data." });
++    } finally {
++      setIsSimulating(false);
++    }
++  };
++
++  const handleDownloadReport = async () => {
++    if (isDownloading) return;
++    setIsDownloading(true);
++    try {
++      const res = await apiClient.get('/inspections?page_size=1');
++      if (res.data?.items?.length > 0) {
++        const latestId = res.data.items[0].id;
++        const reportRes = await apiClient.get(`/inspections/${latestId}/report/download`, { responseType: 'blob' });
++        const url = window.URL.createObjectURL(new Blob([reportRes.data]));
++        const link = document.createElement('a');
++        link.href = url;
++        link.setAttribute('download', `report_${latestId}.md`);
++        document.body.appendChild(link);
++        link.click();
++        link.parentNode?.removeChild(link);
++      } else {
++        alert("No inspections available for report download.");
++      }
++    } catch (err) {
++      console.error(err);
++      alert("Failed to download report.");
++    } finally {
++      setIsDownloading(false);
++    }
++  };
+ 
+   return (
+     <div className="flex flex-col w-full">
+@@ -181,7 +237,7 @@
+                 </span>
+-                <span className="text-slate-400 font-semibold flex items-center gap-1 cursor-not-allowed" title="Model details not available">
++                <span className="text-slate-600 font-semibold flex items-center gap-1 cursor-pointer hover:text-slate-900 transition-colors" onClick={(e) => { e.stopPropagation(); setModalState({ type: 'deterministic', rule: ruleData['rule-6-1-a'] }); }}>
+                   <span>View Deterministic Model</span>
+                   <Icon name="arrow_forward" className="text-[16px]" />
+                 </span>
+               </div>
+@@ -257,7 +313,7 @@
+                 </span>
+-                <span className="text-slate-400 font-semibold flex items-center gap-1 cursor-not-allowed" title="Formula details not available">
++                <span className="text-slate-600 font-semibold flex items-center gap-1 cursor-pointer hover:text-slate-900 transition-colors" onClick={(e) => { e.stopPropagation(); setModalState({ type: 'geometric', rule: ruleData['rule-6-1-h'] }); }}>
+                   <span>View Geometric Formula</span>
+                   <Icon name="arrow_forward" className="text-[16px]" />
+                 </span>
+               </div>
+@@ -303,7 +359,7 @@
+                 </span>
+-                <span className="text-slate-400 font-semibold flex items-center gap-1 cursor-not-allowed" title="Declaration details not available">
++                <span className="text-slate-600 font-semibold flex items-center gap-1 cursor-pointer hover:text-slate-900 transition-colors" onClick={(e) => { e.stopPropagation(); setModalState({ type: 'declaration', rule: ruleData['rule-6-1-e'] }); }}>
+                   <span>View Declaration Details</span>
+                   <Icon name="arrow_forward" className="text-[16px]" />
+                 </span>
+               </div>
+@@ -369,11 +425,11 @@
+             {/* Quick Reference Action */}
+             <div className="pt-2 flex flex-col gap-2">
+-              <button disabled title="Simulation endpoint not available" className="w-full py-2.5 bg-slate-400 text-white rounded-lg font-semibold text-sm cursor-not-allowed flex items-center justify-center gap-1.5 shadow-sm">
++              <button onClick={handleSimulate} disabled={isSimulating} className="w-full py-2.5 bg-slate-900 text-white hover:bg-slate-800 rounded-lg font-semibold text-sm cursor-pointer transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+                 <Icon name="rule" className="text-[18px]" />
+-                <span>Simulate Verification Test</span>
++                <span>{isSimulating ? 'Simulating...' : 'Simulate Verification Test'}</span>
+               </button>
+-              <button disabled title="PDF extract generation not available" className="w-full py-2 bg-slate-100 border border-slate-200 text-slate-400 rounded-lg font-semibold text-sm cursor-not-allowed text-center shadow-sm">
+-                Download Statutory PDF Extract
++              <button onClick={handleDownloadReport} disabled={isDownloading} className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg font-semibold text-sm cursor-pointer text-center shadow-sm transition-colors">
++                {isDownloading ? 'Downloading...' : 'Download Latest Inspection Report (MD)'}
+               </button>
+             </div>
+           </div>
+@@ -395,6 +451,26 @@
+         </div>
+       </div>
++
++      {modalState && (
++        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onClick={() => setModalState(null)}>
++          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
++            <div className="flex justify-between items-center mb-4">
++              <h3 className="text-xl font-bold text-slate-900">{modalState.type === 'simulate' ? 'Simulation Result' : 'Rule Details'}</h3>
++              <button onClick={() => setModalState(null)} className="text-slate-400 hover:text-slate-700">
++                <Icon name="close" className="text-[24px]" />
++              </button>
++            </div>
++            <div className="space-y-4">
++              <p className="font-semibold text-slate-800">{modalState.rule?.title}</p>
++              {modalState.type === 'simulate' && <p className="p-3 bg-slate-100 rounded text-slate-700 font-mono text-sm">{modalState.result}</p>}
++              {modalState.type !== 'simulate' && <p className="text-slate-600 text-sm">{modalState.rule?.passLogic}</p>}
++              {modalState.type !== 'simulate' && <p className="text-slate-500 text-xs">Resolution: {modalState.rule?.resolution} | Tolerance: {modalState.rule?.tolerance}</p>}
++            </div>
++            <button onClick={() => setModalState(null)} className="mt-6 w-full py-2 bg-slate-900 text-white rounded-lg font-semibold">Close</button>
++          </div>
++        </div>
++      )}
+     </div>
+   );
+ };

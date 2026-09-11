@@ -1,0 +1,153 @@
+{
+  "project": {
+    "name": "ComplianceSahayak",
+    "projectId": "projects/14474284752258384513",
+    "createTime": "2026-09-08T15:55:32.954509Z",
+    "updateTime": "2026-09-09T13:32:31.345368Z",
+    "projectType": "TEXT_TO_UI_PRO",
+    "origin": "STITCH",
+    "deviceType": "DESKTOP"
+  },
+  "screens": [
+    {
+      "id": "104a694992b84e1982a8489f55866fa5",
+      "name": "projects/14474284752258384513/screens/104a694992b84e1982a8489f55866fa5",
+      "title": "Officer Reports",
+      "width": 2560,
+      "height": 3924,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1WVBgnThBpc2yZEajhjUuAYoofbHxUWDnef5JV1VnzFE6wjN5X-27oe_ISn8zYL3Tzx2TWvwxxpha_pCN5hOilFi5vIsl74Z7RYODLAC_pSrXCAG3Zc5ywEHVezOsxACuUre7203rGx3xPfMqrr8P5fs9anJpzUq0mSvDEwa_B1-RlcIT_nVn_F1GOKontaRR7FQjCSEP73a5EbGoFk6aTb_mrMNBUbypDYwt7wL9Dj3MQWEYa2RTa43Ok",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYWUwNmJiZTUwNTIyYTQ1MzU1MDNiZWI0EgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "914ae4956b6f418a8bfd21b84d034947",
+      "name": "projects/14474284752258384513/screens/914ae4956b6f418a8bfd21b84d034947",
+      "title": "Manufacturer & Repeat Findings",
+      "width": 2560,
+      "height": 3314,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1UlFpR9npP0_LfZxtYqWOU60Tu9_cXakrwndor9d4tZtgkFITc4p2nZfNyvDnxxTfXFQOzO762pyKhvHYHJARB3gBZSRBDcmCJ-3vHtUFtCmABPeOcwTTCEZZtEePLrXNokG1Duyu-rvzZ2XNFsJQEIRzfawyCjlKB8ggXrOjHJ7uDPgeMRXxP9pLuOUP7RAaZnHdStfbctUxSbScuhutg9mM9W8ZpFb4Qj-SVm8QIRy9-ZQhAVM6IgmaI",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYWVmOWY5NGQwMmQzZmM2NjQ2MzFmNjk0EgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "b030ed45dc0042f3ba21ebd52a398831",
+      "name": "projects/14474284752258384513/screens/b030ed45dc0042f3ba21ebd52a398831",
+      "title": "Officer Compliance Dashboard",
+      "width": 2560,
+      "height": 2616,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1X46AetxPA52G9YNL4pLN6pFsoaPkrkB2VgFztqBH8J5ltsJwG6KX-0KedUPrqUW8lRPR3SaxrRDxD6GMJlfEooFaxKsSIZLNshMQD7yE004Gx2TogL57F7eHhI6z2SBTdWKFFuIZM0ChTnAvYzvz7I2dOohYENYhNnKCgpDcrjxHizXbQai4ge-zj8NxMpX2Ykjtguid7sLGtuTcJhZoteWid6HAd31k5h0ceUPIuNwwfHd55AslQXfQyZ",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBjNTcwMDNiNjUwNzBkY2EyMTRmMTEyZTBlEgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "77af0229fdd24672985ec7d0499be0e2",
+      "name": "projects/14474284752258384513/screens/77af0229fdd24672985ec7d0499be0e2",
+      "title": "Map",
+      "width": 2560,
+      "height": 2512,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1XFqBRy301YPMDIFJ9QQjs6okmbXRVDD5fwaAOgYpG89Ct_XXMXIP8zdBOBVqKJITMhQF11w-5eb3zs01eHqWDIJGvfsATW7psGSzH6TGWqYsJeX9RqeO1m0-lwyzY3xrhnmaIqkgjQJwICJ2p48yXqXdMxhuLTLxOfod79gjnOeSjmkWJrPLxzM0YerQbffDFM1Ka64BayO2mdP65x1bKjv_oIC0QkAgDgzdSCcDag-xIIN03gTANyWH8",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYWVkNWUyOWUwMmQzYzI5MmJiMDU4ZWIwEgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "fd165b6dd7134b37975bff36dc8ba41d",
+      "name": "projects/14474284752258384513/screens/fd165b6dd7134b37975bff36dc8ba41d",
+      "title": "User Login",
+      "width": 2560,
+      "height": 2112,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1V7fBhpa9aNTYXrYXSSJvJIOuQD3VvboYGM3ENtkUEZa_o9oOFUtj0Cpdyt4rpI01htp0GZUQsSPWd47USvHqUXCwwgB-PNH3wF2v3Hcl-KwVob17FGDT_0PEfpuGRk3NBRz1687vgw6E31oehfrMxmEHu0zrFA7lGnISH2BB2het_6x9LI_SUFp7svniMjNukBdbQLOSk4O3QcrUraoAdCHi70OR0B__AuzIubYfrnIS2W6n6LSTqTzHGI",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYjA2NjZhMTMwMmE5ODFhZmQ5MGJmZTg4EgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "de34f5557e6644ca990f025e8e63bec6",
+      "name": "projects/14474284752258384513/screens/de34f5557e6644ca990f025e8e63bec6",
+      "title": "User Dashboard",
+      "width": 2560,
+      "height": 2736,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1WVKPbtrzdTdU6hvfQStnFHXIKNA4G6aG0-OS8EpBD_bRzHUhBGDpATlDPDvJKOGwFwBAi4medTBf90BK1B56jOISgsVnwKZOUbqxl6t1Lc2FdNaNPt4vdjoty9pIHW1cqRAlX0Q_cfbnSE9rlYZqAQIFgjSG77gniodPUQ82mY0HP3hTnZvnCfhxK0y0kwoUYTVyXYcBCeiNqDWPUXHyAMYcQdLsvv2nQD54KFPD0KQtO_YHzd5Gc2Mb-g",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYjAwNTIyY2UwMjJkNGU3ODFjMzYxZWRiEgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "afcf03c9c06e43a48e29393b69a010be",
+      "name": "projects/14474284752258384513/screens/afcf03c9c06e43a48e29393b69a010be",
+      "title": "User Report View",
+      "width": 2560,
+      "height": 4878,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1U-vXjLTGbKzaLx4rCdTjgzKZ9d9bgfzkfTT7IWBIRxgPJXPcjqQwexNO0B4R6ff8vfKvc5zMhUazu3zbAalgotjWD9quasvspcOhOrUsGR5diaq-SYmqyu8jNENJMaO9xAIHCFskSz0tzeUjxylgMOshdKPTXOYRfDOF0H7Q-AjgzaPABq_lYF-oWNkoKA8Lz2FyH_Z9Lu6G6YJgy1IGZySTYTbQin2Qj5fmcf3xNgbM2T5mGASqNFujAN",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYjBmYmUyZGYwMWE2MmQ2ZDc2Mjc1MTU1EgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "a70c3e0785844f5abdd41092e974f0ce",
+      "name": "projects/14474284752258384513/screens/a70c3e0785844f5abdd41092e974f0ce",
+      "title": "Officer History",
+      "width": 2560,
+      "height": 3480,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1UQdmgoEJ_DtAqDu7095vYiaXc0_vNHc3dXBwWWpOTkNgMmD0Oeon7rHME6vVw4q5jOd5RRiZsiMx-Te8MTruQCpB_OpWO4J2Vj5jwuZs_kipveVMj7OULjF5uoGEHyaJZ4F5mCop3kf97bh9Fi9sQjCSKOPMLz-nXwexrdaar2ZDeCX3TLx7g4WJkRK8sdFZQ5MfnXJW7mLWfQZh9PjfSdw01HHy8zlM02gciT3DJAtXbVgnHHS9xcECc",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYWRmMjBkN2MwN2UwMDY4ZDNlMWM2MTZkEgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "bd55f89afb404cbbbdd05b92e176c97e",
+      "name": "projects/14474284752258384513/screens/bd55f89afb404cbbbdd05b92e176c97e",
+      "title": "Inspection Dossier",
+      "width": 2560,
+      "height": 5188,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1UafU0SL4cw0tjIgi9RmvpLgCld9MioDVjYCF5C_exAGjv9qco5zClP-jD_-toSBHbZv2niDGMoooYksLfH9GdzZzWHIGHZdCw_5RKOUXtQpjU7WfL4xwGNmCCRae6Es_tQ4sDJaC2pk14wurHZ23Lv4L2qFgw2eoqmCKtz0K4puUM4LmUzZQnZ2dTNe0Oa060x8hmezhtGEmXmeKIqdi6GAORdrB1GmCu4isaKcQozYIcFN2hXJOk89OjW",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYWU0M2RmNTMwOTEwNGZkNTVmMGQ2ZDEyEgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "9a099f71f60a4985b0e3beb9972c011a",
+      "name": "projects/14474284752258384513/screens/9a099f71f60a4985b0e3beb9972c011a",
+      "title": "Analytics",
+      "width": 2560,
+      "height": 3640,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1XDf1SLu_ggznoU4Yn6-0fSyfDuv9UZ7dEVjAWT6cLBUEUosCD9v5gFSno6jzOAMV62f6_NuoWw_gZLpXq88GDhfprFZqvXfTZN-Aj29hAJOk8jH-Uu4Be-FbWNJaIDB_FWuTimQcIZY6jO-d1Ls64V_MdKV6_-b2CYxVNhj44nS-9916YB39LASKpB-4o3ihRehn66YbvNOh3c-uQ0UYEsPrxdFndBzZYvXizSasIA4OYOpqGJR7Kg3FY",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYWYyNjQ4ZDQwMWE2MmQ2ZDc2Mjc1MTU1EgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "df70828f5ae0495283da7f9ee01cb525",
+      "name": "projects/14474284752258384513/screens/df70828f5ae0495283da7f9ee01cb525",
+      "title": "User Scan History",
+      "width": 2560,
+      "height": 5232,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1UYsf-RMXkcvGosfyyY9-3htv4fuocRy3vKA2vSsZfbm9bh2sXheLWKwJ_d-n_4t8K0-IUccKI8-YmfW2x2kIW8v1Zw3aPoBG53eTJSO7Sp-3X8lNeGBvoN99_4niGWnzpuSAa15EOR73PYQhJeQUMQyZAI8JcXyGlM7j6_MURFwTNv_7ri0FxRL0CDze2z-eIQf2JKyx3k8MMHjmpxkQuDN1zOiZSwry2JetBZDn8GttYvYWeln78Ncp-B",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYjAxYWJlMzcwOTEwNGZkNTVmMGQ2ZDEyEgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "7ef31f48f36540869c46003604047d8d",
+      "name": "projects/14474284752258384513/screens/7ef31f48f36540869c46003604047d8d",
+      "title": "New Inspection",
+      "width": 2560,
+      "height": 2876,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1Uyi_SBgeagCHGtCSBcZfQycEA_HPUe9vJEEVaruH_iiYqiHAKl5kyapDit1V03rUxBBunq7dQ1t36EJLX7hG9_uXbs-dS3Kd_3yjt37e6UBY4pRxiwmDO1h6Z2lG14N1GbjfFAJSD9wDgNv-GLthVZpEP9JK2GrOIYFvZvzK4duYuYhPnGUzLEeB0X9z5yReX6IVvlcLI6WjWBAK4MgCJHuPMd0yGpuZ6z31aR_h7e5bN-16bzGHUV0_5u",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYWYwOGQ2N2UwN2UwMDY4ZDNlMWM2MTZkEgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "151f7e0589784c7ca4a6d158957eb065",
+      "name": "projects/14474284752258384513/screens/151f7e0589784c7ca4a6d158957eb065",
+      "title": "Compliance Rules",
+      "width": 2560,
+      "height": 3764,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1X7u8UJuGKNPIHaJaJQlIbbkG2AuU_7ZA1ZxJHRu59bKZxQZAxhkOx5Px0jTSCNoeJ6PYzvVikiYEuQU2AAWwmXg4Ev6dk3QH9XCuhMxwSPCFYDzgvhMW4tDqmuNp9XlDVRYjhyAzDtANv3qxgW1Iwdiu__799o3oslgwO_LgmgdUzo8iEAN8LBvvKLXEtVvE-gWh2m6WfGpRt4eIVlTq5II-l5FgquQfQGQG1SGFsZlc6xv2YqeX8IdDCX",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYWUyNWZhMGYwN2M0ZjM2MTUwMzg0ZmVjEgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    },
+    {
+      "id": "715f22e6db4047fda868a777216efd17",
+      "name": "projects/14474284752258384513/screens/715f22e6db4047fda868a777216efd17",
+      "title": "New User Scan",
+      "width": 2560,
+      "height": 2650,
+      "deviceType": "DESKTOP",
+      "screenshot_url": "https://lh3.googleusercontent.com/aida/AEtjO1X0Fa1_hUXMHw5yeMTGFWi1fW1VdBSTkzWQypFfLEffKC5bm7L6scoFu6WVL_Y73CrvgOszW5qqvuQ26V7W_o7YkWEw7M_qczbiZqeSgwbJ9ti5Ddrrj1ONW5nO5jZTEV3SBLFmU8_Gs0ZZQUb6vPdxUi9DMpjLBvK7LuH8CZvkhoCIFpJ6go_wJuZIdhSD98L8m_mhI4wsT-H6EQSuCSxymsT3Q35CrWFR4T6GoRE7WdBi19-uIHhQDtbx",
+      "htmlCode_url": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1YjBiYWZiOGM4Y2IwNTIyYTQ1MzU1MDNiZWI0EgsSBxC8oIfNkRIYAZIBJAoKcHJvamVjdF9pZBIWQhQxNDQ3NDI4NDc1MjI1ODM4NDUxMw&filename=&opi=89354086"
+    }
+  ]
+}

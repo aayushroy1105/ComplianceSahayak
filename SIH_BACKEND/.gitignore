@@ -1,0 +1,15 @@
+# Local development credential files — never commit
+E2E_LOCAL_CREDENTIALS.txt
+
+# Environment files
+.env
+
+# Reports (local only)
+*.md
+!README.md
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
