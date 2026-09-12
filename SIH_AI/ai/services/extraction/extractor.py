@@ -144,34 +144,73 @@ class DeclarationExtractor:
                     declarations.append(Declaration(
                         field_name=field,
                         extraction_status="UNCERTAIN",
-                        raw_value=" | ".join([x[3] for x in candidates]),
+                        raw_value=" | ".join([str(x[3]) for x in candidates]),
                         confidence=min([x[4] for x in candidates])
                     ))
                     continue
                     
-                # Check if all valid candidates agree on normalized value
-                first_val = valid_candidates[0][1]
-                conflict = any(c[1] != first_val for c in valid_candidates)
+                # Deduplicate exact matching strings or highly similar strings
+                unique_candidates = []
+                import difflib
+                for c in valid_candidates:
+                    key = str(c[1]).lower()
+                    
+                    # Check if there is an existing candidate that is very similar (e.g. >80% similarity)
+                    matched_idx = -1
+                    for idx, ex in enumerate(unique_candidates):
+                        if difflib.SequenceMatcher(None, key, str(ex[1]).lower()).ratio() > 0.8:
+                            matched_idx = idx
+                            break
+                            
+                    if matched_idx != -1:
+                        # Keep the one with higher confidence
+                        if c[4] > unique_candidates[matched_idx][4]:
+                            unique_candidates[matched_idx] = c
+                    else:
+                        unique_candidates.append(c)
                 
-                if conflict:
-                    declarations.append(Declaration(
-                        field_name=field,
-                        extraction_status="CONFLICTING",
-                        raw_value=" | ".join([c[3] for c in valid_candidates]),
-                        confidence=min([c[4] for c in valid_candidates]),
-                        source_image_id=image_id
-                    ))
-                else:
-                    c = valid_candidates[0]
-                    declarations.append(Declaration(
-                        field_name=field,
-                        extraction_status="FOUND",
-                        normalized_value=c[1],
-                        normalized_unit=c[2],
-                        raw_value=c[3],
-                        confidence=c[4],
-                        bounding_box=c[5],
-                        source_image_id=image_id
-                    ))
+                valid_candidates = unique_candidates
+                
+                # Sort by confidence
+                valid_candidates.sort(key=lambda x: x[4], reverse=True)
+                
+                # If still multiple candidates, check for field-specific conflict resolution
+                if len(valid_candidates) > 1:
+                    if field == "NET_QUANTITY":
+                        # Prefer pieces/capsules over weight
+                        pieces = [c for c in valid_candidates if c[2] and c[2].upper() in ["CAPSULES", "TABLETS", "CAPS", "TABS", "PILLS", "PACK"]]
+                        if pieces:
+                            valid_candidates = [pieces[0]]
+                        
+                    elif field == "PACKER" or field == "MANUFACTURER":
+                        # For entities, pick the longest reasonable name or highest confidence
+                        # If confidences are close, pick the longest string
+                        pass
+                
+                if len(valid_candidates) > 1:
+                    # Check if they still conflict
+                    first_val = valid_candidates[0][1]
+                    conflict = any(c[1] != first_val for c in valid_candidates)
+                    if conflict:
+                        declarations.append(Declaration(
+                            field_name=field,
+                            extraction_status="CONFLICTING",
+                            raw_value=" | ".join([str(c[3]) for c in valid_candidates]),
+                            confidence=min([c[4] for c in valid_candidates]),
+                            source_image_id=image_id
+                        ))
+                        continue
+
+                c = valid_candidates[0]
+                declarations.append(Declaration(
+                    field_name=field,
+                    extraction_status="FOUND",
+                    normalized_value=c[1],
+                    normalized_unit=c[2],
+                    raw_value=c[3],
+                    confidence=c[4],
+                    bounding_box=c[5],
+                    source_image_id=image_id
+                ))
                     
         return declarations
