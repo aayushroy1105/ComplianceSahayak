@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '../../components/ui/Icon';
 import { inspectionsApi } from '../../api/inspections';
-import type { LocationMarker, InspectionListItem } from '../../api/types';
+import type { InspectionListItem } from '../../api/types';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -16,24 +16,21 @@ L.Icon.Default.mergeOptions({
 });
 
 const Map: React.FC = () => {
-  const [locations, setLocations] = useState<LocationMarker[]>([]);
-  const [recentInspections, setRecentInspections] = useState<InspectionListItem[]>([]);
-  const [compliantCount, setCompliantCount] = useState(0);
+  const [locations, setLocations] = useState<InspectionListItem[]>([]);
+  const [filteredLocations, setFilteredLocations] = useState<InspectionListItem[]>([]);
   const [totalInspections, setTotalInspections] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [selectedInspectionId, setSelectedInspectionId] = useState<string | null>(null);
+  const mapRef = React.useRef<L.Map | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [locRes, recentRes, compRes, allRes] = await Promise.all([
-          inspectionsApi.getLocations({ page: 1, page_size: 100 }),
-          inspectionsApi.getInspections({ page: 1, page_size: 3 }),
-          inspectionsApi.getInspections({ page: 1, page_size: 1, compliance_status: 'COMPLIANT' }),
-          inspectionsApi.getInspections({ page: 1, page_size: 1 })
-        ]);
-        setLocations(locRes.items || []);
-        setRecentInspections(recentRes.items || []);
-        setCompliantCount(compRes.pagination.total_items);
-        setTotalInspections(allRes.pagination.total_items);
+        const res = await inspectionsApi.getInspections({ page: 1, page_size: 100 });
+        const valid = (res.items || []).filter(loc => loc.latitude != null && loc.longitude != null);
+        setLocations(valid);
+        setFilteredLocations(valid);
+        setTotalInspections(res.pagination.total_items);
       } catch (err) {
         console.error('Failed to load map data:', err);
       }
@@ -41,12 +38,21 @@ const Map: React.FC = () => {
     fetchData();
   }, []);
 
-  const nonCompliantCount = totalInspections - compliantCount;
-  const complianceRate = totalInspections > 0 ? ((compliantCount / totalInspections) * 100).toFixed(1) : '0.0';
+  useEffect(() => {
+    if (statusFilter) {
+      setFilteredLocations(locations.filter(l => l.compliance_status === statusFilter));
+    } else {
+      setFilteredLocations(locations);
+    }
+  }, [statusFilter, locations]);
 
-  const validLocations = locations.filter(loc => loc.latitude != null && loc.longitude != null);
-  const center: [number, number] = validLocations.length > 0 
-    ? [validLocations[0].latitude!, validLocations[0].longitude!] 
+  const compliantCount = filteredLocations.filter(l => l.compliance_status === 'COMPLIANT').length;
+  const nonCompliantCount = filteredLocations.filter(l => l.compliance_status === 'NON_COMPLIANT').length;
+  const displayedCount = filteredLocations.length;
+  const complianceRate = displayedCount > 0 ? ((compliantCount / displayedCount) * 100).toFixed(1) : '0.0';
+
+  const center: [number, number] = filteredLocations.length > 0 
+    ? [filteredLocations[0].latitude!, filteredLocations[0].longitude!] 
     : [18.6276, 73.8131];
 
   return (
@@ -66,9 +72,19 @@ const Map: React.FC = () => {
             <h1 className="font-display-lg text-display-lg text-on-surface tracking-tight">Geographic Inspection Distribution</h1>
           </div>
           <div className="flex flex-wrap items-center gap-space-sm bg-surface-container-lowest p-space-xs rounded-xl shadow-sm">
-            <button disabled className="h-9 px-space-base bg-slate-200 text-slate-400 rounded-lg font-label-md text-label-md flex items-center gap-space-xs cursor-not-allowed" title="Filtering not yet available">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-9 px-space-base bg-white border border-slate-200 text-slate-700 rounded-lg font-label-md text-label-md outline-none"
+            >
+              <option value="">All Statuses</option>
+              <option value="COMPLIANT">Compliant</option>
+              <option value="NON_COMPLIANT">Non-Compliant</option>
+              <option value="INCONCLUSIVE">Inconclusive</option>
+            </select>
+            <button onClick={() => setStatusFilter('')} className="h-9 px-space-base bg-slate-200 text-slate-700 rounded-lg font-label-md text-label-md flex items-center gap-space-xs cursor-pointer hover:bg-slate-300 transition-colors">
               <Icon name="tune" className="text-[16px]" />
-              <span>Filters</span>
+              <span>Clear</span>
             </button>
           </div>
         </div>
@@ -76,32 +92,38 @@ const Map: React.FC = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-base mt-space-sm relative">
         <div className="xl:col-span-8 flex flex-col relative h-[620px] lg:h-[720px] rounded-xl overflow-hidden bg-surface-container shadow-md z-0">
-          <MapContainer center={center} zoom={6} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
+          <MapContainer center={center} zoom={6} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }} ref={mapRef}>
             <TileLayer
               attribution='&copy; OpenStreetMap'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {validLocations.map((loc) => {
+            {filteredLocations.map((loc) => {
               const isError = loc.compliance_status === 'NON_COMPLIANT';
               const isWarning = loc.compliance_status === 'INCONCLUSIVE';
+              const isSelected = selectedInspectionId === loc.id;
               const color = isError ? 'red' : (isWarning ? 'orange' : 'green');
               
               // Custom div icon
               const markerIcon = L.divIcon({
                 className: 'custom-marker',
-                html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
+                html: `<div style="background-color: ${color}; width: ${isSelected ? '24px' : '16px'}; height: ${isSelected ? '24px' : '16px'}; border-radius: 50%; border: ${isSelected ? '3px' : '2px'} solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: all 0.2s;"></div>`,
+                iconSize: [isSelected ? 24 : 16, isSelected ? 24 : 16],
+                iconAnchor: [isSelected ? 12 : 8, isSelected ? 12 : 8]
               });
 
               return (
-                <Marker key={loc.inspection_id} position={[loc.latitude!, loc.longitude!]} icon={markerIcon}>
+                <Marker key={loc.id} position={[loc.latitude!, loc.longitude!]} icon={markerIcon} eventHandlers={{ click: () => setSelectedInspectionId(loc.id) }}>
                   <Popup>
-                    <div className="text-center">
-                      <p className="font-bold">{loc.manufacturer || 'Unknown Location'}</p>
-                      <p>{loc.compliance_status}</p>
-                      <Link to={`/app/inspection/${loc.inspection_id}`} className="text-blue-600 underline text-sm mt-1 inline-block">
-                        View Dossier
+                    <div className="text-left min-w-[200px]">
+                      <p className="text-xs text-slate-500 font-mono mb-1">Docket #{loc.inspection_code}</p>
+                      <p className="font-bold text-slate-900 mb-0.5">{loc.product_name_ai || 'Unknown Product'}</p>
+                      <p className="text-xs text-slate-600 mb-2">{loc.manufacturer_name || 'Unknown Manufacturer'}</p>
+                      <div className="flex flex-col gap-1 text-xs mb-3">
+                        <span className="font-semibold text-slate-700">Date: <span className="font-normal">{loc.inspection_date ? new Date(loc.inspection_date).toLocaleString() : 'N/A'}</span></span>
+                        <span className="font-semibold text-slate-700">Status: <span className={`font-bold ${isError ? 'text-rose-600' : isWarning ? 'text-amber-600' : 'text-emerald-600'}`}>{loc.compliance_status}</span></span>
+                      </div>
+                      <Link to={`/app/inspection/${loc.id}`} className="bg-slate-900 text-white hover:bg-slate-800 text-xs py-1.5 px-3 rounded w-full block text-center transition-colors">
+                        Open Dossier
                       </Link>
                     </div>
                   </Popup>
@@ -109,7 +131,7 @@ const Map: React.FC = () => {
               );
             })}
           </MapContainer>
-          {validLocations.length === 0 && (
+          {filteredLocations.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-[500] rounded-xl">
               <div className="text-center space-y-2 p-6">
                 <Icon name="location_off" className="text-[48px] text-slate-300" />
@@ -141,28 +163,40 @@ const Map: React.FC = () => {
           <div className="bg-surface-container-lowest p-space-base rounded-xl shadow-sm flex flex-col flex-1">
             <div className="flex items-center justify-between pb-space-sm">
               <span className="font-headline-sm text-headline-sm text-on-surface font-bold">Audit Records at Node</span>
-              <span className="font-code-sm text-code-sm text-on-surface-variant">Showing latest 3</span>
+              <span className="font-code-sm text-code-sm text-on-surface-variant">{displayedCount} records</span>
             </div>
-            <div className="space-y-space-sm flex-1 overflow-y-auto">
-              {recentInspections.map((item) => (
-                <div key={item.id} className="bg-surface-container-low p-space-sm rounded-lg space-y-space-xs hover:bg-surface-container transition-colors">
-                  <div className="flex items-center justify-between">
-                    <span className="font-code-sm text-code-sm font-semibold text-on-surface">{item.inspection_code}</span>
-                    <span className="text-xs font-bold">{item.compliance_status || 'PENDING'}</span>
+            <div className="space-y-space-sm flex-1 overflow-y-auto pr-1">
+              {filteredLocations.map((item) => {
+                const isSelected = selectedInspectionId === item.id;
+                return (
+                  <div 
+                    key={item.id} 
+                    onClick={() => {
+                      setSelectedInspectionId(item.id);
+                      if (mapRef.current && item.latitude != null && item.longitude != null) {
+                        mapRef.current.flyTo([item.latitude, item.longitude], 12);
+                      }
+                    }}
+                    className={`p-space-sm rounded-lg space-y-space-xs cursor-pointer transition-colors border ${isSelected ? 'bg-slate-100 border-slate-300' : 'bg-surface-container-low border-transparent hover:bg-surface-container'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-code-sm text-code-sm font-semibold text-on-surface">{item.inspection_code}</span>
+                      <span className={`text-xs font-bold ${item.compliance_status === 'NON_COMPLIANT' ? 'text-rose-600' : item.compliance_status === 'INCONCLUSIVE' ? 'text-amber-600' : 'text-emerald-600'}`}>{item.compliance_status || 'PENDING'}</span>
+                    </div>
+                    <div>
+                      <p className="font-headline-sm text-headline-sm text-on-surface font-semibold truncate">{item.product_name_ai || 'Unknown Product'}</p>
+                    </div>
+                    <div className="flex items-center justify-between pt-space-xs">
+                      <span className="font-code-sm text-code-sm text-on-surface-variant">{item.inspection_date ? new Date(item.inspection_date).toLocaleDateString() : ''}</span>
+                      <Link className="px-space-sm py-space-2xs rounded bg-surface-container-highest text-on-surface font-label-sm text-label-sm hover:bg-outline-variant transition-colors flex items-center gap-space-2xs" to={`/app/inspection/${item.id}`} onClick={(e) => e.stopPropagation()}>
+                        <span className="">View Dossier</span>
+                        <Icon name="chevron_right" className="text-[14px]" />
+                      </Link>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-headline-sm text-headline-sm text-on-surface font-semibold truncate">{item.product_name_ai || 'Unknown Product'}</p>
-                  </div>
-                  <div className="flex items-center justify-between pt-space-xs">
-                    <span className="font-code-sm text-code-sm text-on-surface-variant">{item.inspection_date ? new Date(item.inspection_date).toLocaleDateString() : ''}</span>
-                    <Link className="px-space-sm py-space-2xs rounded bg-surface-container-highest text-on-surface font-label-sm text-label-sm hover:bg-outline-variant transition-colors flex items-center gap-space-2xs" to={`/app/inspection/${item.id}`}>
-                      <span className="">View Dossier</span>
-                      <Icon name="chevron_right" className="text-[14px]" />
-                    </Link>
-                  </div>
-                </div>
-              ))}
-              {recentInspections.length === 0 && (
+                );
+              })}
+              {filteredLocations.length === 0 && (
                 <div className="text-center text-on-surface-variant py-8">No records available</div>
               )}
             </div>

@@ -33,6 +33,7 @@ class ImageValidationResult(BaseModel):
 
 class PreprocessingConfig(BaseModel):
     max_dimension: Optional[int] = 2048
+    upscale_factor: float = 1.0
     apply_grayscale: bool = False
     apply_denoise: bool = False
     apply_contrast_enhancement: bool = False

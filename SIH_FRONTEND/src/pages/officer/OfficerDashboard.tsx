@@ -80,8 +80,24 @@ const OfficerDashboard: React.FC = () => {
             <Icon name="refresh" className="text-[16px] text-slate-500 transition-transform" />
             <span>Refresh</span>
           </button>
-          <button disabled className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-100 border border-slate-200 text-slate-400 text-xs font-medium cursor-not-allowed" title="Export not yet available">
-            <Icon name="download" className="text-[16px]" />
+          <button 
+            onClick={() => {
+              const csvContent = "data:text/csv;charset=utf-8," 
+                + "Metric,Count,Percentage\\n"
+                + `Total Inspections,${totalInspections},100%\\n`
+                + `Compliant,${compliantCount},${compPct}%\\n`
+                + `Non-Compliant,${nonCompliantCount},${nonCompPct}%\\n`
+                + `Inconclusive,${inconclusiveCount},${inconcPct}%\\n`;
+              const encodedUri = encodeURI(csvContent);
+              const link = document.createElement("a");
+              link.setAttribute("href", encodedUri);
+              link.setAttribute("download", "officer_dashboard_summary.csv");
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }} 
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium cursor-pointer shadow-sm transition-colors" title="Export Dashboard Summary">
+            <Icon name="download" className="text-[16px] text-slate-500" />
             <span>Export Summary</span>
           </button>
           <Link className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium shadow-sm transition-colors" to="/app/inspection/new">

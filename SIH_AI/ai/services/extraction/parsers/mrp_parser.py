@@ -12,7 +12,7 @@ def parse_mrp(text: str, norm_text: str) -> Tuple[str, Any, Optional[str], Optio
         if fp in norm_text:
             return ("MISSING", None, None, None)
             
-    mrp_pattern = re.compile(r'\b(?:m\.?r\.?p\.?|rs\.?|₹|inr)\s*[:\.]?\s*(\d+\.?\d*)', re.IGNORECASE)
+    mrp_pattern = re.compile(r'\b(?:m\.?r\.?p\.?|r?s\.?|₹|inr)\s*[:\.]?\s*(\d+\.?\d*)', re.IGNORECASE)
     match = mrp_pattern.search(text)
     if match:
         val = float(match.group(1))

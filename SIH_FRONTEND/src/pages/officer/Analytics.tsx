@@ -4,37 +4,51 @@ import Icon from '../../components/ui/Icon';
 import { inspectionsApi } from '../../api/inspections';
 
 const Analytics: React.FC = () => {
-  const [totalInspections, setTotalInspections] = useState<number>(0);
-  const [compliantCount, setCompliantCount] = useState<number>(0);
-  const [nonCompliantCount, setNonCompliantCount] = useState<number>(0);
-  const [inconclusiveCount, setInconclusiveCount] = useState<number>(0);
-  const [recentInspections, setRecentInspections] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
+  const [allInspections, setAllInspections] = useState<any[]>([]);
+  const [filteredInspections, setFilteredInspections] = useState<any[]>([]);
+  const [dateFilter, setDateFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        setIsLoading(true);
-        const [allRes, compRes, nonCompRes, inconcRes, recentRes] = await Promise.all([
-          inspectionsApi.getInspections({ page: 1, page_size: 1 }),
-          inspectionsApi.getInspections({ page: 1, page_size: 1, compliance_status: 'COMPLIANT' }),
-          inspectionsApi.getInspections({ page: 1, page_size: 1, compliance_status: 'NON_COMPLIANT' }),
-          inspectionsApi.getInspections({ page: 1, page_size: 1, compliance_status: 'INCONCLUSIVE' }),
-          inspectionsApi.getInspections({ page: 1, page_size: 5 })
-        ]);
-        setTotalInspections(allRes.pagination.total_items);
-        setCompliantCount(compRes.pagination.total_items);
-        setNonCompliantCount(nonCompRes.pagination.total_items);
-        setInconclusiveCount(inconcRes.pagination.total_items);
-        setRecentInspections(recentRes.items || []);
+        
+        // Fetch up to 100 recent inspections to do client-side analytics (API limit is 100)
+        const res = await inspectionsApi.getInspections({ page: 1, page_size: 100 });
+        const items = res.items || [];
+        setAllInspections(items);
+        setFilteredInspections(items);
+        
+        // Extract unique categories
+        const cats = Array.from(new Set(items.map((i: any) => i.product_category_ai).filter(Boolean))) as string[];
+        setCategories(cats.sort());
       } catch (err) {
         console.error('Failed to load metrics:', err);
-      } finally {
-        setIsLoading(false);
       }
     };
     fetchMetrics();
   }, []);
+
+  useEffect(() => {
+    let filtered = allInspections;
+    if (dateFilter) {
+      filtered = filtered.filter(i => i.inspection_date && i.inspection_date.startsWith(dateFilter));
+    }
+    if (categoryFilter) {
+      filtered = filtered.filter(i => i.product_category_ai === categoryFilter);
+    }
+    setFilteredInspections(filtered);
+  }, [dateFilter, categoryFilter, allInspections]);
+
+  const totalInspections = filteredInspections.length;
+  const compliantCount = filteredInspections.filter(i => i.compliance_status === 'COMPLIANT').length;
+  const nonCompliantCount = filteredInspections.filter(i => i.compliance_status === 'NON_COMPLIANT').length;
+  const inconclusiveCount = filteredInspections.filter(i => i.compliance_status === 'INCONCLUSIVE').length;
+  const recentInspections = filteredInspections.slice(0, 10);
+
+  const compPct = totalInspections > 0 ? ((compliantCount / totalInspections) * 100).toFixed(1) : '0.0';
+  const nonCompPct = totalInspections > 0 ? ((nonCompliantCount / totalInspections) * 100).toFixed(1) : '0.0';
+  const inconcPct = totalInspections > 0 ? ((inconclusiveCount / totalInspections) * 100).toFixed(1) : '0.0';
 
   const exportCSV = () => {
     const headers = ['Inspection Code', 'Product Name', 'Manufacturer', 'Category', 'Date', 'Status', 'Violations'];
@@ -57,10 +71,6 @@ const Analytics: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  const compPct = totalInspections > 0 ? ((compliantCount / totalInspections) * 100).toFixed(1) : '0.0';
-  const nonCompPct = totalInspections > 0 ? ((nonCompliantCount / totalInspections) * 100).toFixed(1) : '0.0';
-  const inconcPct = totalInspections > 0 ? ((inconclusiveCount / totalInspections) * 100).toFixed(1) : '0.0';
-
   return (
     <div className="flex-1 pb-8 space-y-6 overflow-x-hidden">
       {/* Top Operational Control & Breadcrumb Header */}
@@ -73,14 +83,40 @@ const Analytics: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <div className="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
-            <button disabled className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 cursor-not-allowed" type="button" title="Date filtering not yet available">
-              <Icon name="calendar_today" className="text-[15px]" />
-              <span>Date Filter</span>
-            </button>
-            <button disabled className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 cursor-not-allowed" type="button" title="Commodity filtering not yet available">
-              <Icon name="tune" className="text-[15px]" />
-              <span>Category Filter</span>
-            </button>
+            <div className="flex items-center gap-1.5 px-3 py-1.5">
+              <Icon name="calendar_today" className="text-[15px] text-slate-500" />
+              <input 
+                type="date" 
+                value={dateFilter}
+                onChange={e => setDateFilter(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs text-slate-700 w-[110px]"
+              />
+            </div>
+            <div className="w-px h-4 bg-slate-300 mx-1"></div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5">
+              <Icon name="category" className="text-[15px] text-slate-500" />
+              <select 
+                value={categoryFilter}
+                onChange={e => setCategoryFilter(e.target.value)}
+                className="bg-transparent border-none outline-none text-xs text-slate-700 w-[120px] cursor-pointer"
+              >
+                <option value="">All Categories</option>
+                {categories.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            {(dateFilter || categoryFilter) && (
+              <>
+                <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                <button 
+                  onClick={() => { setDateFilter(''); setCategoryFilter(''); }}
+                  className="px-2 py-1 text-xs text-slate-500 hover:text-slate-800 transition-colors"
+                >
+                  Clear
+                </button>
+              </>
+            )}
           </div>
           <button 
             onClick={exportCSV}
@@ -104,7 +140,7 @@ const Analytics: React.FC = () => {
             </div>
           </div>
           <div>
-            <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{isLoading ? '...' : totalInspections}</span>
+            <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{totalInspections}</span>
             <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 flex-wrap">
               <span>All recorded scans</span>
             </div>
@@ -121,7 +157,7 @@ const Analytics: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{isLoading ? '...' : `${compPct}%`}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{`${compPct}%`}</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold border border-emerald-200/60">{compliantCount} Validated</span>
             </div>
           </div>
@@ -137,7 +173,7 @@ const Analytics: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{isLoading ? '...' : `${nonCompPct}%`}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{`${nonCompPct}%`}</span>
               <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[11px] font-semibold border border-rose-200/60">{nonCompliantCount} Notices</span>
             </div>
           </div>
@@ -153,7 +189,7 @@ const Analytics: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{isLoading ? '...' : `${inconcPct}%`}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{`${inconcPct}%`}</span>
               <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-semibold border border-amber-200/60">{inconclusiveCount} Pending</span>
             </div>
           </div>
@@ -161,15 +197,75 @@ const Analytics: React.FC = () => {
       </div>
 
       {/* Analytical Charts Section */}
-      <div className="bg-white p-10 rounded-xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center min-h-[300px]">
-        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
-          <Icon name="bar_chart" className="text-[24px]" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+          <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Icon name="donut_large" className="text-slate-500 text-[18px]" />
+            Compliance Distribution
+          </h3>
+          {totalInspections === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">No data available</div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-semibold text-emerald-700">Compliant ({compliantCount})</span>
+                  <span className="font-bold">{compPct}%</span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2">
+                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${compPct}%` }}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-semibold text-rose-700">Non-Compliant ({nonCompliantCount})</span>
+                  <span className="font-bold">{nonCompPct}%</span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2">
+                  <div className="bg-rose-500 h-2 rounded-full" style={{ width: `${nonCompPct}%` }}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-semibold text-amber-700">Review Required ({inconclusiveCount})</span>
+                  <span className="font-bold">{inconcPct}%</span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2">
+                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${inconcPct}%` }}></div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-1">Advanced Analytics Unavailable</h3>
-        <p className="text-sm text-slate-500 max-w-md mx-auto">
-          Detailed time-series telemetry and deficit matrix charting are currently unpopulated. 
-          Please generate more inspection reports to unlock these operational insights.
-        </p>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+          <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Icon name="category" className="text-slate-500 text-[18px]" />
+            Category Breakdown
+          </h3>
+          {categories.length === 0 || totalInspections === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">No data available</div>
+          ) : (
+            <div className="space-y-3 overflow-y-auto max-h-[160px] pr-2">
+              {categories.map(cat => {
+                const count = filteredInspections.filter(i => i.product_category_ai === cat).length;
+                if (count === 0) return null;
+                const pct = ((count / totalInspections) * 100).toFixed(1);
+                return (
+                  <div key={cat}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="font-medium text-slate-700 truncate mr-2" title={cat}>{cat}</span>
+                      <span className="font-mono text-slate-500">{pct}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1.5">
+                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${pct}%` }}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
 

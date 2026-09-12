@@ -161,7 +161,14 @@ def preprocess_image(original_path: str, output_path: str, config: Preprocessing
                 if list(img.size) != orig_dim:
                     operations.append("exif_transpose")
                     
-            # 2. Resize
+            # 2. Upscale
+            if config.upscale_factor > 1.0:
+                w, h = img.size
+                new_w, new_h = int(w * config.upscale_factor), int(h * config.upscale_factor)
+                img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                operations.append(f"upscale_{config.upscale_factor}")
+
+            # 3. Resize
             if config.max_dimension:
                 w, h = img.size
                 if w > config.max_dimension or h > config.max_dimension:

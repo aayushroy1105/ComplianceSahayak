@@ -35,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, onClose }) => {
               <NavLink
                 key={route.path}
                 to={route.path}
-                end={route.path === '/app/user/scan' || route.path === '/app/history'}
+                end={route.path === '/app/user/scan' || route.path === '/app/history' || route.path === '/app'}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm transition-all ${
                     isActive 
@@ -99,7 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, onClose }) => {
               <NavLink
                 key={route.path}
                 to={route.path}
-                end={route.path === '/app/user/scan' || route.path === '/app/history'}
+                end={route.path === '/app/user/scan' || route.path === '/app/history' || route.path === '/app'}
                 onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 px-3 py-2 rounded-lg font-semibold text-xs transition-colors ${

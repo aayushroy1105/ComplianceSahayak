@@ -159,7 +159,7 @@ async def analyze_package(
                 log_event("image_quality_poor", scan_id=scan_id, image_idx=img_idx)
                 # We can still try OCR, but confidence might be lower
                 
-            prep_config = PreprocessingConfig(max_dimension=1920, apply_grayscale=False, apply_contrast_enhancement=True)
+            prep_config = PreprocessingConfig(max_dimension=1920, upscale_factor=1.0, apply_grayscale=False, apply_contrast_enhancement=True)
             processed_path = temp_path + f"_processed_{img_idx}.jpg"
             processed_paths.append(processed_path)
             prep_res = preprocess_image(temp_path, processed_path, prep_config)
@@ -185,18 +185,43 @@ async def analyze_package(
                     
                 if len(blocks) < 3 or needs_rotation:
                     try:
-                        from PIL import Image
+                        from PIL import Image, ImageEnhance
                         with Image.open(target_image_path) as im:
-                            rotated = im.transpose(Image.ROTATE_270)
-                            rotated_path = target_image_path + "_rot.jpg"
-                            rotated.save(rotated_path)
-                            temp_paths.append(rotated_path)
+                            w, h = im.size
                             
-                        ocr_result_rot = await ocr_client.extract_text(rotated_path, scan_id)
-                        blocks_rot = ocr_result_rot.get("text_blocks", [])
-                        if len(blocks_rot) > len(blocks):
-                            blocks = blocks_rot
-                            target_image_path = rotated_path
+                            # RIGHT EDGE CROP (25%) -> Rotate 270
+                            right_box = (int(w * 0.75), 0, w, h)
+                            right_edge = im.crop(right_box)
+                            right_edge = right_edge.resize((right_edge.width * 2, right_edge.height * 2), Image.Resampling.LANCZOS)
+                            right_edge = ImageEnhance.Contrast(right_edge).enhance(1.5)
+                            right_edge = ImageEnhance.Sharpness(right_edge).enhance(2.0)
+                            right_rot = right_edge.transpose(Image.ROTATE_270)
+                            right_path = target_image_path + "_right_rot.jpg"
+                            right_rot.save(right_path)
+                            temp_paths.append(right_path)
+                            
+                            # LEFT EDGE CROP (25%) -> Rotate 90
+                            left_box = (0, 0, int(w * 0.25), h)
+                            left_edge = im.crop(left_box)
+                            left_edge = left_edge.resize((left_edge.width * 2, left_edge.height * 2), Image.Resampling.LANCZOS)
+                            left_edge = ImageEnhance.Contrast(left_edge).enhance(1.5)
+                            left_edge = ImageEnhance.Sharpness(left_edge).enhance(2.0)
+                            left_rot = left_edge.transpose(Image.ROTATE_90)
+                            left_path = target_image_path + "_left_rot.jpg"
+                            left_rot.save(left_path)
+                            temp_paths.append(left_path)
+                            
+                        ocr_right = await ocr_client.extract_text(right_path, scan_id)
+                        ocr_left = await ocr_client.extract_text(left_path, scan_id)
+                        
+                        fallback_blocks = ocr_right.get("text_blocks", []) + ocr_left.get("text_blocks", [])
+                        
+                        existing_texts = set([re.sub(r'[^a-z0-9]', '', b.get("text", "").lower()) for b in blocks])
+                        for fb in fallback_blocks:
+                            norm_fb = re.sub(r'[^a-z0-9]', '', fb.get("text", "").lower())
+                            if len(norm_fb) > 2 and norm_fb not in existing_texts:
+                                blocks.append(fb)
+                                
                     except Exception as fallback_e:
                         log_event("ocr_fallback_rotation_error", detail=str(fallback_e))
 

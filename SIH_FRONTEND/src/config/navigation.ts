@@ -2,12 +2,9 @@ import {
   LayoutDashboard, 
   ScanLine, 
   History, 
-  Users, 
   BarChart3, 
   Map as MapIcon,
-  ShieldCheck,
-  FileText,
-  BookOpen
+  ShieldCheck
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Role } from '../types';
@@ -29,9 +26,6 @@ export const NAVIGATION_CONFIG: NavItem[] = [
   { name: 'Dashboard', path: '/app', icon: LayoutDashboard, roles: ['officer'] },
   { name: 'New Inspection', path: '/app/inspection/new', icon: ShieldCheck, roles: ['officer'] },
   { name: 'Inspection Dossiers', path: '/app/history', icon: History, roles: ['officer'] },
-  { name: 'Compliance Rules', path: '/app/rules', icon: BookOpen, roles: ['officer'] },
-  { name: 'Verified Registry', path: '/app/manufacturer', icon: Users, roles: ['officer'] },
-  { name: 'Reports', path: '/app/reports', icon: FileText, roles: ['officer'] },
   { name: 'Analytics', path: '/app/analytics', icon: BarChart3, roles: ['officer'] },
   { name: 'Map View', path: '/app/map', icon: MapIcon, roles: ['officer'] },
 ];

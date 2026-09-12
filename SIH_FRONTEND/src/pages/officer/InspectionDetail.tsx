@@ -152,7 +152,17 @@ const InspectionDetail: React.FC = () => {
 
   const isCompliant = inspection.compliance_status === 'COMPLIANT';
   const isNonCompliant = inspection.compliance_status === 'NON_COMPLIANT';
-  const complianceColor = isCompliant ? 'emerald' : (isNonCompliant ? 'rose' : 'slate');
+  
+  const complianceStyles = {
+    bg: isCompliant ? 'bg-emerald-50' : (isNonCompliant ? 'bg-rose-50' : 'bg-slate-50'),
+    border: isCompliant ? 'border-emerald-200' : (isNonCompliant ? 'border-rose-200' : 'border-slate-200'),
+    textBanner: isCompliant ? 'text-emerald-950' : (isNonCompliant ? 'text-rose-950' : 'text-slate-950'),
+    iconBg: isCompliant ? 'bg-emerald-600' : (isNonCompliant ? 'bg-rose-600' : 'bg-slate-600'),
+    badgeBg: isCompliant ? 'bg-emerald-600' : (isNonCompliant ? 'bg-rose-600' : 'bg-slate-600'),
+    textMuted: isCompliant ? 'text-emerald-800' : (isNonCompliant ? 'text-rose-800' : 'text-slate-800'),
+    textDark: isCompliant ? 'text-emerald-900' : (isNonCompliant ? 'text-rose-900' : 'text-slate-900'),
+    borderDivider: isCompliant ? 'border-emerald-200' : (isNonCompliant ? 'border-rose-200' : 'border-slate-200'),
+  };
 
   return (
     <div className="flex-1 space-y-6 pb-8">
@@ -220,21 +230,21 @@ const InspectionDetail: React.FC = () => {
 
         {/* Overall Compliance Determination Banner */}
         {inspection.compliance_status && (
-        <div className={`bg-${complianceColor}-50 border border-${complianceColor}-200 text-${complianceColor}-950 rounded-xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm`}>
+        <div className={`${complianceStyles.bg} border ${complianceStyles.border} ${complianceStyles.textBanner} rounded-xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm`}>
           <div className="flex items-start gap-3.5">
-            <div className={`w-10 h-10 rounded-lg bg-${complianceColor}-600 text-white flex items-center justify-center shrink-0 shadow-sm`}>
+            <div className={`w-10 h-10 rounded-lg ${complianceStyles.iconBg} text-white flex items-center justify-center shrink-0 shadow-sm`}>
               <Icon name={isCompliant ? 'check_circle' : (isNonCompliant ? 'gavel' : 'help_outline')} className="text-[22px]" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-xs font-bold font-mono tracking-wider uppercase bg-${complianceColor}-600 text-white px-2.5 py-0.5 rounded`}>
+                <span className={`text-xs font-bold font-mono tracking-wider uppercase ${complianceStyles.badgeBg} text-white px-2.5 py-0.5 rounded`}>
                   STATUTORY DETERMINATION: {inspection.compliance_status}
                 </span>
                 {inspection.violations.length > 0 && (
-                  <span className={`text-xs font-medium text-${complianceColor}-800`}>{inspection.violations.length} Discrepancies Flagged</span>
+                  <span className={`text-xs font-medium ${complianceStyles.textMuted}`}>{inspection.violations.length} Discrepancies Flagged</span>
                 )}
               </div>
-              <p className={`text-xs sm:text-sm text-${complianceColor}-900 font-medium mt-1 leading-snug`}>
+              <p className={`text-xs sm:text-sm ${complianceStyles.textDark} font-medium mt-1 leading-snug`}>
                 {inspection.violations.length > 0 ? (
                   <>Infractions identified across {inspection.violations.length} rules.</>
                 ) : (
@@ -244,7 +254,7 @@ const InspectionDetail: React.FC = () => {
             </div>
           </div>
           {inspection.review_required && (
-            <div className={`flex items-center gap-3 shrink-0 self-start md:self-auto border-t md:border-t-0 md:border-l border-${complianceColor}-200 pt-3 md:pt-0 md:pl-4`}>
+            <div className={`flex items-center gap-3 shrink-0 self-start md:self-auto border-t md:border-t-0 md:border-l ${complianceStyles.borderDivider} pt-3 md:pt-0 md:pl-4`}>
               <div className="text-left md:text-right">
                 <div className={`text-[11px] text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded`}>REVIEW REQUIRED</div>
                 <div className="text-[11px] text-slate-600 mt-1 max-w-[150px]">{inspection.review_reason}</div>
@@ -432,26 +442,35 @@ const InspectionDetail: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3 mt-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Adjudication Actions</span>
-              <span className="text-[11px] font-mono text-slate-500">Status: {inspection.review_status}</span>
+              <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full font-bold ${inspection.review_status === 'LOCKED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>Status: {inspection.review_status || 'PENDING'}</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button 
                 onClick={() => setShowNoticeModal(true)}
-                disabled={isIssuingNotice}
-                className="px-3 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer hover:bg-slate-800"
+                disabled={isIssuingNotice || inspection.review_status === 'LOCKED'}
+                className={`px-3 py-2.5 rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-colors ${inspection.review_status === 'LOCKED' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 'bg-slate-900 text-white hover:bg-slate-800 cursor-pointer'}`}
                 title="Issue Enforcement Notice"
                 type="button"
               >
                 <Icon name="gavel" className="text-[16px]" /> Issue Notice
               </button>
               <button 
-                onClick={() => handleUpdateStatus('LOCKED')}
-                disabled={isUpdatingStatus}
-                className="px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                title="Lock docket as legally verified"
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to lock this docket? No further modifications will be allowed.")) {
+                    handleUpdateStatus('LOCKED');
+                  }
+                }}
+                disabled={isUpdatingStatus || inspection.review_status === 'LOCKED'}
+                className={`px-3 py-2.5 rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-colors ${
+                  inspection.review_status === 'LOCKED' 
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer'
+                }`}
+                title={inspection.review_status === 'LOCKED' ? "Docket is locked" : "Lock docket as legally verified"}
                 type="button"
               >
-                <Icon name="task" className="text-[16px]" /> Lock Docket
+                <Icon name={inspection.review_status === 'LOCKED' ? "lock" : "task"} className="text-[16px]" /> 
+                {inspection.review_status === 'LOCKED' ? "Docket Locked" : "Lock Docket"}
               </button>
             </div>
 

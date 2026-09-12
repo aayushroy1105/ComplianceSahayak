@@ -17,11 +17,8 @@ import OfficerDashboard from './pages/officer/OfficerDashboard';
 import NewInspection from './pages/officer/NewInspection';
 import InspectionDetail from './pages/officer/InspectionDetail';
 import OfficerHistory from './pages/officer/OfficerHistory';
-import Manufacturers from './pages/officer/ManufacturerRepeat';
 import Analytics from './pages/officer/Analytics';
 import MapPage from './pages/officer/Map';
-import OfficerReports from './pages/officer/OfficerReports';
-import ComplianceRules from './pages/officer/ComplianceRules';
 
 function App() {
   return (
@@ -55,11 +52,8 @@ function App() {
             <Route path="inspection/new" element={<NewInspection />} />
             <Route path="inspection/:id" element={<InspectionDetail />} />
             <Route path="history" element={<OfficerHistory />} />
-            <Route path="manufacturer" element={<Manufacturers />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="map" element={<MapPage />} />
-            <Route path="reports" element={<OfficerReports />} />
-            <Route path="rules" element={<ComplianceRules />} />
           </Route>
         </Route>
       </Routes>

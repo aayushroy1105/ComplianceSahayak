@@ -1,18 +1,49 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/ui/Icon';
 import { inspectionsApi } from '../../api/inspections';
 import type { ApiError } from '../../api/types';
 
+type AngleType = 'FRONT' | 'BACK' | 'SIDE' | 'OTHER';
+interface UploadedAngle {
+  file: File;
+  previewUrl: string;
+  type: AngleType;
+  id: string;
+}
+
 const NewInspection: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const pendingAngleRef = useRef<AngleType>('FRONT');
+  const [angles, setAngles] = useState<UploadedAngle[]>([]);
+  const [uploadedAngleIds, setUploadedAngleIds] = useState<Set<string>>(new Set());
+  
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [locationText, setLocationText] = useState('retail');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLatitude(position.coords.latitude);
+          setLongitude(position.coords.longitude);
+        },
+        (error) => {
+          console.warn("Geolocation access denied or unavailable:", error);
+        }
+      );
+    }
+  }, []);
+
+  const initiateUpload = (type: AngleType) => {
+    pendingAngleRef.current = type;
+    fileInputRef.current?.click();
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -30,36 +61,48 @@ const NewInspection: React.FC = () => {
     }
 
     setErrorMsg(null);
-    setSelectedFile(file);
-    const url = URL.createObjectURL(file);
-    setFilePreviewUrl(url);
+    const newAngle: UploadedAngle = {
+      file,
+      previewUrl: URL.createObjectURL(file),
+      type: pendingAngleRef.current,
+      id: Math.random().toString(36).substring(7)
+    };
+    
+    setAngles(prev => [...prev, newAngle]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleStartAnalysis = async () => {
-    if (!selectedFile) {
-      setErrorMsg('Please select a package image file before submitting intake.');
+    if (angles.length === 0) {
+      setErrorMsg('Please select at least one package image file before submitting intake.');
       return;
     }
 
     setIsSubmitting(true);
-    let inspectionId = '';
+    let currentInspectionId = '';
 
     try {
       // 1. Create Inspection
       const createRes = await inspectionsApi.createInspection({
         location_text: locationText || 'Delhi NCR Field Zone',
         inspection_date: new Date().toISOString(),
+        ...(latitude !== null && longitude !== null ? { latitude, longitude } : {})
       });
-      inspectionId = createRes.id;
+      currentInspectionId = createRes.id;
 
-      // 2. Upload Image
-      await inspectionsApi.uploadImage(inspectionId, selectedFile);
+      // 2. Upload Images
+      for (const angle of angles) {
+        if (!uploadedAngleIds.has(angle.id)) {
+          await inspectionsApi.uploadImage(currentInspectionId, angle.file, angle.type);
+          setUploadedAngleIds(prev => new Set(prev).add(angle.id));
+        }
+      }
 
       // 3. Trigger Real AI Analysis Pipeline
-      await inspectionsApi.analyze(inspectionId);
+      await inspectionsApi.analyze(currentInspectionId);
 
       // Success, go to Dossier
-      navigate(`/app/inspection/${inspectionId}`);
+      navigate(`/app/inspection/${currentInspectionId}`);
     } catch (error) {
       const apiError = error as ApiError;
       setErrorMsg(`Failed: ${apiError.detail || apiError.message || 'Unknown error'}`);
@@ -161,53 +204,95 @@ const NewInspection: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Single Image Upload Angle */}
-              <div 
-                className="bg-slate-50 rounded-xl p-3 flex flex-col justify-between space-y-2 border border-dashed border-slate-300 hover:bg-slate-100/70 transition-colors cursor-pointer group"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-xs text-slate-700 flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${selectedFile ? 'bg-emerald-500' : 'bg-slate-300'}`}></span> Front / Primary Display Panel
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase ${selectedFile ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-200 text-slate-700'}`}>
-                    {selectedFile ? 'UPLOADED' : 'REQUIRED FOR TEST'}
-                  </span>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/jpeg, image/png, image/webp"
+              onChange={handleFileChange} 
+            />
+            
+            {angles.length === 0 ? (
+              <div className="group relative w-full rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 p-6 sm:p-8 flex flex-col items-center justify-center text-center shadow-inner">
+                <div className="w-14 h-14 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-500 mb-3">
+                  <Icon name="add_a_photo" className="text-[30px]" />
                 </div>
-                
-                {filePreviewUrl ? (
-                  <div className="relative h-52 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
-                    <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="Selected file preview" src={filePreviewUrl} />
-                  </div>
-                ) : (
-                  <div className="h-52 rounded-lg bg-white border border-slate-200/80 flex flex-col items-center justify-center p-4 text-center space-y-2">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 group-hover:scale-110 transition-transform shadow-sm">
-                      <Icon name="add_a_photo" className="text-[20px]" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <span className="font-bold text-xs text-slate-900 block">+ Add Package Image</span>
-                      <p className="text-[11px] text-slate-500 max-w-[190px]">Use this angle to test real backend image upload.</p>
-                    </div>
-                    <span className="text-[11px] font-mono px-2 py-1 bg-slate-100 text-slate-700 rounded border border-slate-200">Drag &amp; drop or click</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-slate-500">{selectedFile ? selectedFile.name : 'Supports JPG, PNG, WebP up to 5MB'}</span>
-                  <button className="text-xs text-blue-600 font-semibold hover:underline" type="button">
-                    {selectedFile ? 'Change File' : 'Choose File'}
-                  </button>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/jpeg, image/png, image/webp"
-                    onChange={handleFileChange} 
-                  />
+                <span className="text-sm font-bold text-slate-900 mb-1">Upload Packaging Images</span>
+                <p className="text-xs text-slate-500 max-w-md mb-4 leading-relaxed">Select an angle to upload for compliance verification.</p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  {(['FRONT', 'BACK', 'SIDE', 'OTHER'] as AngleType[]).map(type => (
+                    <button 
+                      key={type}
+                      type="button"
+                      className="px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm flex items-center gap-1.5 focus:outline-none" 
+                      onClick={() => initiateUpload(type)}
+                    >
+                      <Icon name="add_photo_alternate" className="text-[16px]" />
+                      <span>Add {type}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-4 flex items-center gap-3 text-slate-400 font-mono text-[10px] font-medium">
+                  <span>Formats: JPEG, PNG, WEBP</span>
+                  <span className="text-slate-300">•</span>
+                  <span>Max size: 5MB/file</span>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {angles.map(angle => (
+                  <div key={angle.id} className="bg-slate-50 rounded-xl p-2 border border-slate-200 flex flex-col gap-2 shadow-sm transition-all hover:bg-slate-100">
+                    <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-slate-200 flex items-center justify-center">
+                      <img alt={angle.type} className="w-full h-full object-cover" src={angle.previewUrl} />
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 backdrop-blur-sm text-white font-mono text-[10px] flex items-center gap-1.5 shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span>{angle.type}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1 px-1.5 pb-1 mt-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-900 font-bold">{angle.type} Panel</span>
+                        <span className="font-mono text-[9px] px-1 py-0.5 rounded font-semibold text-emerald-700 bg-emerald-100/50 border border-emerald-200">
+                          Ready
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between pt-2 border-t border-slate-200 mt-1">
+                        <button className="text-slate-400 hover:text-slate-600 text-[10px] font-bold flex items-center gap-1 py-1 focus:outline-none cursor-not-allowed" disabled type="button">
+                          <Icon name="crop_rotate" className="text-[14px]" />
+                          <span>Adjust (N/A)</span>
+                        </button>
+                        <button 
+                          className="text-rose-600 hover:text-rose-800 text-[10px] font-bold py-1 focus:outline-none" 
+                          onClick={() => {
+                            setAngles(prev => prev.filter(a => a.id !== angle.id));
+                            URL.revokeObjectURL(angle.previewUrl);
+                          }}
+                          type="button"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-center opacity-80 min-h-[190px]">
+                  <span className="text-xs font-bold text-slate-700 mb-3">Add Another Angle</span>
+                  <div className="grid grid-cols-2 gap-2 w-full max-w-[200px]">
+                    {(['FRONT', 'BACK', 'SIDE', 'OTHER'] as AngleType[]).map(type => (
+                      <button 
+                        key={type}
+                        type="button"
+                        className="px-2 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[10px] font-bold hover:bg-slate-100 transition-colors shadow-sm focus:outline-none" 
+                        onClick={() => initiateUpload(type)}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center gap-3 p-3.5 rounded-lg bg-slate-50 text-slate-700 border border-slate-200">
               <Icon name="info" className="text-slate-500 text-[20px]" />
@@ -250,20 +335,20 @@ const NewInspection: React.FC = () => {
                 <Icon name="task_alt" className="text-slate-900 text-[20px]" />
                 <h3 className="font-bold text-base text-slate-900">Intake Readiness Checklist</h3>
               </div>
-              <span className={`font-mono text-xs px-2.5 py-0.5 rounded-full font-semibold border ${selectedFile ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>
-                {selectedFile ? '1/1 Ready' : '0/1 Image Required'}
+              <span className={`font-mono text-xs px-2.5 py-0.5 rounded-full font-semibold border ${angles.length > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>
+                {angles.length > 0 ? `${angles.length} Angle(s) Ready` : '0 Images Uploaded'}
               </span>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <Icon name={selectedFile ? "check_circle" : "radio_button_unchecked"} className={selectedFile ? "text-emerald-600 text-[18px]" : "text-amber-500 text-[18px]"} />
+                  <Icon name={angles.length > 0 ? "check_circle" : "radio_button_unchecked"} className={angles.length > 0 ? "text-emerald-600 text-[18px]" : "text-amber-500 text-[18px]"} />
                   <span className="text-xs font-medium text-slate-800">
-                    {selectedFile ? `Package Image Attached (${selectedFile.name})` : 'Attach Front PDP Package Photo'}
+                    {angles.length > 0 ? `${angles.length} Package Images Attached` : 'Attach Front PDP Package Photo'}
                   </span>
                 </div>
-                <span className={`text-[11px] font-semibold uppercase ${selectedFile ? 'text-emerald-700' : 'text-amber-700'}`}>
-                  {selectedFile ? 'Ready' : 'Pending'}
+                <span className={`text-[11px] font-semibold uppercase ${angles.length > 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  {angles.length > 0 ? 'Ready' : 'Pending'}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
@@ -299,8 +384,9 @@ const NewInspection: React.FC = () => {
             <Icon name="save" className="text-[17px]" /> Save Intake Draft
           </button>
           <button className="h-10 px-4 rounded-lg bg-white text-slate-600 hover:text-rose-600 transition-colors text-xs font-semibold flex items-center justify-center gap-2 border border-slate-200 flex-1 sm:flex-initial" type="button" onClick={() => {
-            setSelectedFile(null);
-            setFilePreviewUrl(null);
+            angles.forEach(a => URL.revokeObjectURL(a.previewUrl));
+            setAngles([]);
+            setUploadedAngleIds(new Set());
           }}>
             <Icon name="restart_alt" className="text-[17px]" /> Reset Fields
           </button>
@@ -311,10 +397,10 @@ const NewInspection: React.FC = () => {
             <span className="text-xs text-slate-500">Ready for Verification</span>
           </div>
           <button 
-            className={`h-10 px-6 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all text-xs font-semibold flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto ${isSubmitting ? 'opacity-70 cursor-wait' : ''}`}
+            className={`h-10 px-6 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all text-xs font-semibold flex items-center justify-center gap-2 shadow-sm w-full sm:w-auto ${isSubmitting || angles.length === 0 ? 'opacity-70 cursor-wait' : ''}`}
             type="button"
             onClick={handleStartAnalysis}
-            disabled={isSubmitting}
+            disabled={isSubmitting || angles.length === 0}
           >
             <span>{isSubmitting ? 'Processing...' : 'Submit & Connect'}</span>
             {!isSubmitting && <Icon name="arrow_forward" className="text-[16px]" />}
