@@ -37,7 +37,17 @@ def parse_entity(text: str, norm_text: str, entity_type: str) -> Tuple[str, Any,
                     return ("MISSING", None, None, None)
 
             if raw_suffix:
-                val = raw_suffix.title() if raw_suffix.islower() or raw_suffix.isupper() else raw_suffix
-                return ("FOUND", val, None, raw_suffix)
+                # Address truncation
+                address_markers = [' f-', ' plot ', ' road ', ' area ', ' industrial ', ' nagar ', ' jaipur ', ' district ', ' pin ', ' postal ']
+                parts = raw_suffix.split(',')
+                company_name = parts[0]
+                for m in address_markers:
+                    idx = company_name.lower().find(m)
+                    if idx > 5:
+                        company_name = company_name[:idx]
+                        break
+                val = company_name.strip()
+                val = val.title() if val.islower() or val.isupper() else val
+                return ("FOUND", val, None, val)
             
     return ("UNCERTAIN", None, None, None)

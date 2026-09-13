@@ -24,7 +24,7 @@ def parse_general(text: str, norm_text: str, field_name: str) -> Tuple[str, Any,
             
         return ("UNCERTAIN", None, None, None)
     elif field_name == "CONSUMER_CARE":
-        aliases = ["consumer care", "customer care", "feedback"]
+        aliases = ["consumer care", "customer care", "feedback", "consumer complaints", "complaints", "complaints / queries", "customer complaints", "queries", "consumer queries"]
         for a in aliases:
             if a in norm_text:
                 suffix = norm_text.split(a)[-1].strip(' :;-')

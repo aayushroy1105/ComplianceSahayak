@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+import re
 from schemas.base import Declaration
 from services.extraction.normalizer import normalize_ocr_text
 from services.extraction.parsers.mrp_parser import parse_mrp
@@ -9,18 +10,16 @@ from services.extraction.parsers.general_parser import parse_general
 
 def is_spatially_close(bbox1, bbox2):
     if not bbox1 or not bbox2:
-        return True # Fallback if bounding boxes are missing
+        return True
     
     x1_min, y1_min, x1_max, y1_max = bbox1
     x2_min, y2_min, x2_max, y2_max = bbox2
     
-    # Check vertical distance (allowing slight overlap or gap)
     vertical_diff = y2_min - y1_max
     is_below = -15 <= vertical_diff <= 80
     
-    # Check horizontal alignment
-    is_same_line = abs(y1_min - y2_min) < 30 and -15 < (x2_min - x1_max) < 150
-    is_next_line_aligned = is_below and abs(x1_min - x2_min) < 150
+    is_same_line = abs(y1_min - y2_min) < 30 and -15 < (x2_min - x1_max) < 300
+    is_next_line_aligned = is_below and -50 < (x2_min - x1_min) < 300
     
     return is_same_line or is_next_line_aligned
 
@@ -34,8 +33,6 @@ class DeclarationExtractor:
     def extract(self, blocks: List[Dict[str, Any]], image_id: str = "img1") -> List[Declaration]:
         results = {f: [] for f in self.fields}
         
-        # Product name needs a holistic view
-        # We will collect possible product names, preferring ones with "mg" or "capsules"
         product_name_candidates = []
         
         for i, block in enumerate(blocks):
@@ -49,7 +46,16 @@ class DeclarationExtractor:
             status, n_val, n_unit, exact_raw = parse_mrp(raw_text, norm_text)
             if status != "MISSING":
                 results["MRP"].append((status, n_val, n_unit, exact_raw or raw_text, conf, bbox))
-                
+            else:
+                if "mrp" in norm_text or "price" in norm_text or "rs" in norm_text:
+                    for j in range(len(blocks)):
+                        if i == j: continue
+                        if is_spatially_close(bbox, blocks[j].get('bbox', None)):
+                            combined = raw_text + " " + blocks[j]['text']
+                            s, nv, nu, ex = parse_mrp(combined, normalize_ocr_text(combined))
+                            if s != "MISSING":
+                                results["MRP"].append((s, nv, nu, ex or combined, conf, blocks[j].get('bbox', None)))
+                                
             # Quantity
             status, n_val, n_unit, exact_raw = parse_quantity(raw_text, norm_text)
             if status != "MISSING":
@@ -60,6 +66,16 @@ class DeclarationExtractor:
                 status, n_val, n_unit, exact_raw = parse_date(raw_text, norm_text, date_field)
                 if status != "MISSING":
                     results[date_field].append((status, n_val, n_unit, exact_raw or raw_text, conf, bbox))
+                else:
+                    date_aliases = ["mfg", "pkd", "packed", "mf", "mfd", "exp", "expiry", "use before", "best before"]
+                    if any(a in norm_text for a in date_aliases):
+                        for j in range(len(blocks)):
+                            if i == j: continue
+                            if is_spatially_close(bbox, blocks[j].get('bbox', None)):
+                                combined = raw_text + " " + blocks[j]['text']
+                                s, nv, nu, ex = parse_date(combined, normalize_ocr_text(combined), date_field)
+                                if s != "MISSING":
+                                    results[date_field].append((s, nv, nu, ex or combined, conf, blocks[j].get('bbox', None)))
                 
             # Entities
             for ent in ["MANUFACTURER", "PACKER", "IMPORTER"]:
@@ -67,9 +83,9 @@ class DeclarationExtractor:
                 if status == "FOUND":
                     results[ent].append((status, n_val, n_unit, exact_raw or raw_text, conf, bbox))
                 else:
-                    # Try multiline context
                     next_block = None
-                    for j in range(i + 1, min(len(blocks), i + 6)):
+                    for j in range(len(blocks)):
+                        if i == j: continue
                         if is_spatially_close(bbox, blocks[j].get('bbox', None)):
                             next_block = blocks[j]
                             break
@@ -90,17 +106,42 @@ class DeclarationExtractor:
             for gen in ["COUNTRY_OF_ORIGIN", "CONSUMER_CARE"]:
                 status, n_val, n_unit, exact_raw = parse_general(raw_text, norm_text, gen)
                 if status != "MISSING":
-                    results[gen].append((status, n_val, n_unit, exact_raw or raw_text, conf, bbox))
+                    if gen == "CONSUMER_CARE" and len(str(n_val)) < 15:
+                        for j in range(len(blocks)):
+                            if i == j: continue
+                            if is_spatially_close(bbox, blocks[j].get('bbox', None)):
+                                combined = raw_text + " " + blocks[j]['text']
+                                s, nv, nu, ex = parse_general(combined, normalize_ocr_text(combined), gen)
+                                if s != "MISSING":
+                                    results[gen].append((s, nv, nu, ex or combined, conf, blocks[j].get('bbox', None)))
+                                    break
+                    else:
+                        results[gen].append((status, n_val, n_unit, exact_raw or raw_text, conf, bbox))
+                else:
+                    if gen == "CONSUMER_CARE":
+                        care_aliases = ["consumer care", "customer care", "feedback", "consumer complaints", "complaints", "complaints / queries", "customer complaints", "queries", "consumer queries"]
+                        if any(a in norm_text for a in care_aliases):
+                            for j in range(len(blocks)):
+                                if i == j: continue
+                                if is_spatially_close(bbox, blocks[j].get('bbox', None)):
+                                    combined = raw_text + " " + blocks[j]['text']
+                                    s, nv, nu, ex = parse_general(combined, normalize_ocr_text(combined), gen)
+                                    if s != "MISSING":
+                                        results[gen].append((s, nv, nu, ex or combined, conf, blocks[j].get('bbox', None)))
+                                        break
             
-            # Collect PRODUCT_NAME candidates
-            # Very simple heuristic: it often contains 'IP', 'mg', 'ml', 'capsule', 'tablet'
+            # PRODUCT NAME - volume/quantity exclusion fix
             if len(raw_text) > 5 and not "manufactured" in norm_text and not "marketed" in norm_text:
-                if any(x in norm_text for x in ['ip', 'bp', 'usp', 'mg', 'ml', 'capsules', 'tablets']):
-                    product_name_candidates.append((raw_text, conf, bbox))
+                admin_terms = ['ml no', 'm.l. no', 'licence no', 'license no', 'fssai', 'batch no', 'lot no', 'mfg no', 'manufactured licence', 'manufacturing licence']
+                if not any(t in norm_text for t in admin_terms):
+                    # Robust volume exclusion
+                    cleaned = re.sub(r'(?i)ml|g|kg|l|fl|oz|pieces|capsules|tablets|mg', '', raw_text)
+                    cleaned = re.sub(r'[\d\s./\-]', '', cleaned)
+                    if len(cleaned.strip()) > 0:
+                        if any(x in norm_text for x in ['ip', 'bp', 'usp', 'mg', 'ml', 'capsules', 'tablets']):
+                            product_name_candidates.append((raw_text, conf, bbox))
 
-        # Sort product name candidates: favor those containing 'mg' or 'capsule'
         if product_name_candidates:
-            # Sort by a score: +1 for mg, +1 for capsule/tablet, +1 for length > 15
             def score_pn(text):
                 s = 0
                 lt = text.lower()
@@ -111,11 +152,9 @@ class DeclarationExtractor:
                 
             product_name_candidates.sort(key=lambda x: score_pn(x[0]), reverse=True)
             best_pn = product_name_candidates[0]
-            # Strip leading asterisks
             pn_text = best_pn[0].lstrip('* ')
             results["PRODUCT_NAME"].append(("FOUND", pn_text, None, pn_text, best_pn[1], best_pn[2]))
             
-        # Consolidate results
         declarations = []
         for field in self.fields:
             candidates = results[field]
@@ -138,7 +177,6 @@ class DeclarationExtractor:
                     source_image_id=image_id
                 ))
             else:
-                # Multiple candidates
                 valid_candidates = [c for c in candidates if c[0] == "FOUND"]
                 if not valid_candidates:
                     declarations.append(Declaration(
@@ -149,46 +187,31 @@ class DeclarationExtractor:
                     ))
                     continue
                     
-                # Deduplicate exact matching strings or highly similar strings
                 unique_candidates = []
                 import difflib
                 for c in valid_candidates:
                     key = str(c[1]).lower()
-                    
-                    # Check if there is an existing candidate that is very similar (e.g. >80% similarity)
                     matched_idx = -1
                     for idx, ex in enumerate(unique_candidates):
                         if difflib.SequenceMatcher(None, key, str(ex[1]).lower()).ratio() > 0.8:
                             matched_idx = idx
                             break
-                            
                     if matched_idx != -1:
-                        # Keep the one with higher confidence
                         if c[4] > unique_candidates[matched_idx][4]:
                             unique_candidates[matched_idx] = c
                     else:
                         unique_candidates.append(c)
                 
                 valid_candidates = unique_candidates
-                
-                # Sort by confidence
                 valid_candidates.sort(key=lambda x: x[4], reverse=True)
                 
-                # If still multiple candidates, check for field-specific conflict resolution
                 if len(valid_candidates) > 1:
                     if field == "NET_QUANTITY":
-                        # Prefer pieces/capsules over weight
                         pieces = [c for c in valid_candidates if c[2] and c[2].upper() in ["CAPSULES", "TABLETS", "CAPS", "TABS", "PILLS", "PACK"]]
                         if pieces:
                             valid_candidates = [pieces[0]]
                         
-                    elif field == "PACKER" or field == "MANUFACTURER":
-                        # For entities, pick the longest reasonable name or highest confidence
-                        # If confidences are close, pick the longest string
-                        pass
-                
                 if len(valid_candidates) > 1:
-                    # Check if they still conflict
                     first_val = valid_candidates[0][1]
                     conflict = any(c[1] != first_val for c in valid_candidates)
                     if conflict:
