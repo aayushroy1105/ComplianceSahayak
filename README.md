@@ -1,3 +1,6 @@
+Absolutely 😎 Here’s a **clean, professional README.md** you can paste directly into the GitHub editor.
+
+````markdown
 # ComplianceSahayak
 
 ## AI-Assisted Legal Metrology Compliance Platform
@@ -202,20 +205,366 @@ A locked inspection is intended to prevent further modification through the norm
                          │ Inspections / OCR    │
                          │ Results / Evidence  │
                          └──────────────────────┘
+````
+
+---
+
+# 🧰 Technology Stack
+
+## Frontend
+
+* React
+* TypeScript
+* Vite
+
+## Backend
+
+* Python
+* FastAPI
+* SQLAlchemy
+* PostgreSQL
+
+## AI / Extraction
+
+* Python
+* Rule-based field parsers
+* AI-assisted extraction
+* OCR evidence processing
+
+## OCR
+
+* PaddleOCR
+* PP-OCRv6 Medium
+* Image preprocessing
+* Rotation handling
+* OCR confidence and bounding boxes
+
+## Mapping
+
+* Leaflet
+* OpenStreetMap
+
+---
+
+# 📂 Repository Structure
+
+```text
+ComplianceSahayak/
+│
+├── SIH_FRONTEND/
+│   └── React + TypeScript frontend
+│
+├── SIH_BACKEND/
+│   └── FastAPI backend
+│
+├── SIH_AI/
+│   ├── ai/
+│   │   └── AI extraction service
+│   │
+│   └── ocr_service/
+│       └── PaddleOCR service
+│
+├── .gitignore
+└── README.md
+```
+
+---
+
+# ⚙️ Local Development
+
+## Prerequisites
+
+Recommended prerequisites:
+
+* Node.js
+* npm
+* Python 3.11+
+* Python 3.14 for the AI environment if required by the current project environment
+* PostgreSQL
+
+---
+
+# ▶️ Start the Application
+
+ComplianceSahayak currently runs as four local services.
+
+## 1. Backend — Port 8000
+
+```bash
+cd /Users/aayushroy/SIH/SIH_BACKEND/backend
+
+source venv/bin/activate
+
+export PYTHONPATH=$(pwd)
+
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Health check:
+
+```bash
+curl http://localhost:8000/api/v1/health
+```
+
+---
+
+## 2. OCR Service — Port 8001
+
+```bash
+cd /Users/aayushroy/SIH/SIH_AI/ocr_service
+
+./venv/bin/python3.11 -m uvicorn app.main:app --host 0.0.0.0 --port 8001
+```
+
+Health check:
+
+```bash
+curl http://localhost:8001/health
+```
+
+The OCR service loads its PaddleOCR models during startup if they are not already cached locally.
+
+---
+
+## 3. AI Service — Port 8002
+
+```bash
+cd /Users/aayushroy/SIH/SIH_AI
+
+source ai/venv/bin/activate
+
+PYTHONPATH=/Users/aayushroy/SIH/SIH_AI/ai \
+uvicorn ai.main:app --host 0.0.0.0 --port 8002
+```
+
+Health check:
+
+```bash
+curl http://localhost:8002/health
+```
+
+---
+
+## 4. Frontend — Port 5173
+
+```bash
+cd /Users/aayushroy/SIH/SIH_FRONTEND
+
+npm run dev -- --host 0.0.0.0
+```
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+---
+
+# 🔌 Service Ports
+
+| Service  | Port |
+| -------- | ---: |
+| Frontend | 5173 |
+| Backend  | 8000 |
+| OCR      | 8001 |
+| AI       | 8002 |
+
+---
+
+# 🔄 Typical Inspection Workflow
+
+```text
+Package Image
+      │
+      ▼
+Multi-Angle Evidence Capture
+      │
+      ▼
+OCR Processing
+      │
+      ▼
+OCR Text + Confidence + Bounding Boxes
+      │
+      ▼
+AI-Assisted Field Extraction
+      │
+      ▼
+Normalization / Candidate Selection
+      │
+      ▼
+Deterministic Compliance Rules
+      │
+      ▼
+Inspection Result
+      │
+      ├───────────────┐
+      ▼               ▼
+   User Report    Officer Dossier
+                      │
+              ┌───────┴────────┐
+              ▼                ▼
+          Adjudication      Analytics
+                               │
+                               ▼
+                              Map
+```
+
+---
+
+# 🔎 OCR Pipeline
+
+The current OCR implementation uses PaddleOCR as its primary OCR engine.
+
+The processing flow includes:
+
+```text
+Input Image
+     │
+     ▼
+Image Preprocessing
+     │
+     ▼
+PaddleOCR Full-Image Pass
+     │
+     ▼
+Targeted Small / Edge Region Processing
+     │
+     ▼
+Image Upscaling / Enhancement
+     │
+     ▼
+Rotated Region OCR
+     │
+     ▼
+OCR Block Merge + Deduplication
+     │
+     ▼
+Confidence + Bounding Boxes
+     │
+     ▼
+AI Field Extraction
+```
+
+The additional processing is intended to improve recognition of difficult real-world packaging text while preserving OCR evidence for downstream verification.
+
+---
+
+# 🧠 Extraction Pipeline
+
+The extraction layer performs field-specific interpretation of OCR evidence.
+
+Examples include:
+
+```text
+OCR:
+"NO.6KM0039 MFDXJAN.26 EXP.DEC.27"
+
+        ↓
+
+Manufacturing Date:
+JAN.26
+
+Expiry Date:
+DEC.27
+```
+
+Similarly, the extraction pipeline distinguishes between semantic categories such as:
+
+```text
+"30 ml"
+        ↓
+NET QUANTITY
+
+"ML No.: RAJ./COS-2825"
+        ↓
+Administrative / Licence information
+```
+
+rather than treating both as product names.
+
+---
+
+# 🛡️ Security & Configuration
+
+Environment-specific configuration and secrets should remain in local environment files.
+
+Typical files such as:
+
+```text
+.env
+.env.local
+```
+
+should not be committed to GitHub.
+
+The repository's `.gitignore` contains rules intended to prevent common secrets, local environments, and generated files from being tracked.
+
+---
+
+# 🧪 Testing Philosophy
+
+The project uses real package photographs as important OCR/extraction test cases.
+
+Example test categories include:
+
+* Pharmaceutical packaging
+* Food packaging
+* Cosmetic / personal-care packaging
+* Small printed text
+* Rotated text
+* Dot-matrix or stamped text
+* Separate label/value OCR blocks
+* Duplicate OCR candidates
+
+The extraction pipeline is designed to prefer **MISSING / REVIEW** over fabricating an unsupported value.
+
+---
+
+# 📌 Project Status
+
+Current platform capabilities include:
+
+* ✅ User Portal
+* ✅ Officer Portal
+* ✅ Multi-angle inspection uploads
+* ✅ PaddleOCR-based OCR pipeline
+* ✅ AI-assisted extraction
+* ✅ Packaging declaration extraction
+* ✅ Deterministic compliance evaluation
+* ✅ Inspection dossiers
+* ✅ Officer analytics
+* ✅ Geo-tagged inspection map
+* ✅ Inspection locking
+* ✅ Export functionality
+
+The OCR and extraction pipeline remains an active area for experimentation and benchmarking.
+
+---
+
+# 🚀 Future Improvements
+
+Potential future development areas include:
+
+* PaddleOCR-VL benchmarking
+* OCR model comparison and ensemble architectures
+* Stronger spatial association between labels and values
+* Improved product-name classification
+* Expanded Legal Metrology rule coverage
+* Larger OCR regression datasets
+* Backend-driven analytics queries
+* Production-scale deployment
+* Automated regression testing
+* Cloud deployment and observability
+
+---
+
+# 👨‍💻 Author
+
+**Aayush Roy**
+
+GitHub:
+
+[https://github.com/aayushroy1105/ComplianceSahayak](https://github.com/aayushroy1105/ComplianceSahayak)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                         
