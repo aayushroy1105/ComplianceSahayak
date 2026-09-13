@@ -191,14 +191,14 @@ A locked inspection is intended to prevent further modification through the norm
                     ┌────────────┘       └──────────────┐
                     ▼                                   ▼
           ┌────────────────────┐              ┌────────────────────┐
-          │     OCR Service    │              │      AI Service     │
-          │     PaddleOCR      │              │ Extraction / AI     │
-          │      Port 8001     │              │      Port 8002      │
+          │     OCR Service    │              │      AI Service    │
+          │     PaddleOCR      │              │ Extraction / AI    │
+          │      Port 8001     │              │      Port 8002     │
           └────────────────────┘              └────────────────────┘
                                  │
                                  ▼
                          ┌──────────────────────┐
                          │       Database       │
                          │ Inspections / OCR    │
-                         │ Results / Evidence  │
+                         │ Results / Evidence   │
                          └──────────────────────┘
