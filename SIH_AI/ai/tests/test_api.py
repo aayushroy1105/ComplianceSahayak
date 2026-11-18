@@ -1,9 +1,6 @@
-import os
+import io
 from fastapi.testclient import TestClient
 import pytest
-import io
-
-os.environ["MOCK_AI"] = "true"
 
 from main import app
 from core.config import settings
@@ -19,10 +16,12 @@ def test_health_check(client):
     assert response.json()["status"] == "ok"
     assert "service" in response.json()
 
-def test_ai_analyze_mock(client):
+def test_ai_analyze_mock(client, monkeypatch):
+    import api.routes
+    monkeypatch.setattr(api.routes.settings, "MOCK_AI", True)
     # Simulate a multipart/form-data request
     payload = {"scan_id": "TEST-123"}
-    files = {"image": ("dummy.jpg", io.BytesIO(b"fake_image_data"), "image/jpeg")}
+    files = [("images", ("dummy.jpg", io.BytesIO(b"fake_image_data"), "image/jpeg"))]
     
     response = client.post("/ai/analyze", data=payload, files=files)
     assert response.status_code == 200
@@ -39,7 +38,7 @@ def test_ai_analyze_mock(client):
 
 def test_ai_analyze_missing_scan_id(client):
     # Test missing scan_id (FastAPI Form validation will fail with 422)
-    files = {"image": ("dummy.jpg", io.BytesIO(b"fake_image_data"), "image/jpeg")}
+    files = [("images", ("dummy.jpg", io.BytesIO(b"fake_image_data"), "image/jpeg"))]
     response = client.post("/ai/analyze", data={}, files=files)
     assert response.status_code == 422
 
@@ -56,7 +55,7 @@ def test_ai_analyze_rag_unavailable(client, monkeypatch):
     from main import app
     monkeypatch.setattr(app.state.indexer, "health_check", lambda: False)
     payload = {"scan_id": "TEST-RAG"}
-    files = {"image": ("dummy.jpg", io.BytesIO(b"fake_image_data"), "image/jpeg")}
+    files = [("images", ("dummy.jpg", io.BytesIO(b"fake_image_data"), "image/jpeg"))]
     
     response = client.post("/ai/analyze", data=payload, files=files)
     assert response.status_code == 200

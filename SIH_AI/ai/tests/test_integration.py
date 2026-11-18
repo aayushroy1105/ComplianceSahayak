@@ -26,13 +26,13 @@ def create_mock_image_bytes():
     return buf.read()
 
 def get_test_files():
-    return {"image": ("test.jpg", create_mock_image_bytes(), "image/jpeg")}
+    return [("images", ("test.jpg", create_mock_image_bytes(), "image/jpeg"))]
 
 @pytest.fixture(autouse=True)
 def mock_quality():
     from core.vision import ImageQualityMetrics, ImageQualityStatus
     with patch("api.routes.assess_image_quality") as mock_assess:
-        mock_assess.return_value = ImageQualityMetrics(blur_score=500.0, contrast_score=100.0, resolution_px=480000, brightness=128.0, status=ImageQualityStatus.GOOD)
+        mock_assess.return_value = ImageQualityMetrics(blur_score=500.0, contrast=100.0, resolution_px=480000, brightness=128.0, status=ImageQualityStatus.GOOD)
         yield mock_assess
 
 @pytest.fixture(autouse=True)
@@ -61,12 +61,16 @@ def test_valid_compliant_pipeline(mock_retrieve, mock_extract_text, client):
     # Setup OCR mock to return blocks that parse to all required fields for LM-005
     mock_extract_text.return_value = {
         "success": True,
+        "image_id": "TEST-COMPLIANT",
         "text_blocks": [
-            {"text": "MRP Rs. 100.00 (incl of all taxes)", "bounding_box": [0,0,1,1], "confidence": 0.99},
-            {"text": "Net Quantity: 1 kg", "bounding_box": [0,0,1,1], "confidence": 0.99},
-            {"text": "Mfd by: Acme Corp, India", "bounding_box": [0,0,1,1], "confidence": 0.99},
-            {"text": "Retail package", "bounding_box": [0,0,1,1], "confidence": 0.99}
-        ]
+            {"text": "MRP Rs. 100.00 (incl of all taxes)", "bbox": [10, 10, 220, 30], "confidence": 0.99},
+            {"text": "Net Quantity: 1 kg", "bbox": [10, 50, 180, 70], "confidence": 0.99},
+            {"text": "Mfd by: Acme Corp, India", "bbox": [10, 90, 220, 110], "confidence": 0.99},
+            {"text": "Retail package", "bbox": [10, 130, 160, 150], "confidence": 0.99}
+        ],
+        "ocr_model_version": "test-ocr-engine",
+        "processing_time_ms": 100,
+        "mock": False
     }
     
     # Setup Retriever mock to return the relevant LM-005 rule chunk
@@ -114,10 +118,14 @@ def test_missing_mrp_pipeline(mock_generate, mock_retrieve, mock_extract_text, c
     # Setup OCR mock missing MRP
     mock_extract_text.return_value = {
         "success": True,
+        "image_id": "TEST-NONCOMPLIANT",
         "text_blocks": [
-            {"text": "Net Quantity: 1 kg", "bounding_box": [0,0,1,1], "confidence": 0.99},
-            {"text": "Mfd by: Acme Corp", "bounding_box": [0,0,1,1], "confidence": 0.99},
-        ]
+            {"text": "Net Quantity: 1 kg", "bbox": [10, 10, 180, 30], "confidence": 0.99},
+            {"text": "Mfd by: Acme Corp", "bbox": [10, 50, 200, 70], "confidence": 0.99},
+        ],
+        "ocr_model_version": "test-ocr-engine",
+        "processing_time_ms": 100,
+        "mock": False
     }
     
     mock_retrieve.return_value = RetrievalResult(
@@ -159,7 +167,14 @@ def test_ocr_failure(mock_extract_text, client):
 # Test 5: Applicability Uncertainty -> INCONCLUSIVE
 @patch("clients.ocr_client.OCRClient.extract_text", new_callable=AsyncMock)
 def test_applicability_uncertain(mock_extract_text, client):
-    mock_extract_text.return_value = {"success": True, "text_blocks": [{"text": "Unknown junk", "bounding_box": [0,0,1,1], "confidence": 0.5}]}
+    mock_extract_text.return_value = {
+        "success": True,
+        "image_id": "TEST-APP-FAIL",
+        "text_blocks": [{"text": "Unknown junk", "bbox": [10, 10, 120, 30], "confidence": 0.5}],
+        "ocr_model_version": "test-ocr-engine",
+        "processing_time_ms": 100,
+        "mock": False
+    }
     
     with patch("services.applicability.engine.ApplicabilityEngine.evaluate") as mock_eval:
         mock_eval.return_value = ApplicabilityResult(status="INSUFFICIENT_CONTEXT", applicable_rule_ids=[], candidate_rule_ids=[])
@@ -176,7 +191,14 @@ def test_applicability_uncertain(mock_extract_text, client):
 @patch("clients.ocr_client.OCRClient.extract_text", new_callable=AsyncMock)
 @patch("services.rag.retriever.Retriever.retrieve")
 def test_rag_unavailable(mock_retrieve, mock_extract_text, client):
-    mock_extract_text.return_value = {"success": True, "text_blocks": [{"text": "Retail package", "bounding_box": [0,0,1,1], "confidence": 0.99}]}
+    mock_extract_text.return_value = {
+        "success": True,
+        "image_id": "TEST-RAG-FAIL",
+        "text_blocks": [{"text": "Retail package", "bbox": [10, 10, 160, 30], "confidence": 0.99}],
+        "ocr_model_version": "test-ocr-engine",
+        "processing_time_ms": 100,
+        "mock": False
+    }
     
     # Simulate Vector Store error
     mock_retrieve.return_value = RetrievalResult(
@@ -204,7 +226,14 @@ def test_rag_unavailable(mock_retrieve, mock_extract_text, client):
 @patch("services.rag.retriever.Retriever.retrieve")
 @patch("ai.services.llm.mock_provider.MockLLMProvider.generate")
 def test_llm_failure_preserves_result(mock_generate, mock_retrieve, mock_extract_text, client):
-    mock_extract_text.return_value = {"success": True, "text_blocks": [{"text": "Net Quantity: 1 kg", "bounding_box": [0,0,1,1], "confidence": 0.99}]}
+    mock_extract_text.return_value = {
+        "success": True,
+        "image_id": "TEST-LLM-FAIL",
+        "text_blocks": [{"text": "Net Quantity: 1 kg", "bbox": [10, 10, 180, 30], "confidence": 0.99}],
+        "ocr_model_version": "test-ocr-engine",
+        "processing_time_ms": 100,
+        "mock": False
+    }
     mock_retrieve.return_value = RetrievalResult(
         query="test query",
         retrieval_mode=RetrievalMode.AUTOMATIC,
@@ -233,7 +262,14 @@ def test_llm_failure_preserves_result(mock_generate, mock_retrieve, mock_extract
 # Test 8: Verify AnalyzeResponse conforms to Schema
 @patch("clients.ocr_client.OCRClient.extract_text", new_callable=AsyncMock)
 def test_response_schema_compliance(mock_extract_text, client):
-    mock_extract_text.return_value = {"success": True, "text_blocks": []}
+    mock_extract_text.return_value = {
+        "success": True,
+        "image_id": "TEST-SCHEMA",
+        "text_blocks": [],
+        "ocr_model_version": "test-ocr-engine",
+        "processing_time_ms": 50,
+        "mock": False
+    }
     payload = {"scan_id": "TEST-SCHEMA"}
     response = client.post("/ai/analyze", data=payload, files=get_test_files())
     assert response.status_code == 200
@@ -257,7 +293,7 @@ def test_response_schema_compliance(mock_extract_text, client):
 def test_image_validation_failure(client):
     # Pass an invalid file format (text as image)
     payload = {"scan_id": "TEST-INVALID-IMG"}
-    files = {"image": ("dummy.txt", io.BytesIO(b"this is not an image"), "text/plain")}
+    files = [("images", ("dummy.txt", io.BytesIO(b"this is not an image"), "text/plain"))]
     response = client.post("/ai/analyze", data=payload, files=files)
     assert response.status_code == 200
     data = response.json()
@@ -265,15 +301,61 @@ def test_image_validation_failure(client):
     assert data["review_reason"] == "INVALID_IMAGE"
 
 # Test 10: Image Quality POOR
+@patch("services.rag.retriever.Retriever.retrieve")
+@patch("clients.ocr_client.OCRClient.extract_text", new_callable=AsyncMock)
 @patch("api.routes.assess_image_quality")
-def test_image_quality_poor(mock_assess, client):
+def test_image_quality_poor(mock_assess, mock_extract_text, mock_retrieve, client, caplog):
+    import logging
     from core.vision import ImageQualityMetrics, ImageQualityStatus
-    mock_assess.return_value = ImageQualityMetrics(blur_score=10.0, contrast_score=10.0, resolution_px=1000, brightness=128.0, status=ImageQualityStatus.POOR)
-    
+    mock_assess.return_value = ImageQualityMetrics(
+        blur_score=10.0,
+        contrast=10.0,
+        resolution_px=1000,
+        brightness=128.0,
+        status=ImageQualityStatus.POOR,
+    )
+    mock_extract_text.return_value = {
+        "success": True,
+        "image_id": "TEST-POOR-IMG",
+        "text_blocks": [
+            {"text": "MRP Rs. 100.00 (incl of all taxes)", "bbox": [10, 10, 220, 30], "confidence": 0.55},
+            {"text": "Net Quantity: 1 kg", "bbox": [10, 50, 180, 70], "confidence": 0.52},
+            {"text": "Mfd by: Acme Corp, India", "bbox": [10, 90, 220, 110], "confidence": 0.50},
+            {"text": "Mfg. Date: 01/2026", "bbox": [10, 130, 180, 150], "confidence": 0.54},
+            {"text": "Retail package", "bbox": [10, 170, 160, 190], "confidence": 0.53},
+        ],
+        "ocr_model_version": "test-ocr-engine",
+        "processing_time_ms": 120,
+        "mock": False,
+    }
+    mock_retrieve.return_value = RetrievalResult(
+        query="test query",
+        retrieval_mode=RetrievalMode.AUTOMATIC,
+        chunks=[
+            RetrievedChunk(
+                rule_id="LM-005",
+                text="Every package shall bear MRP, Net Quantity, and Manufacturer.",
+                score=0.9,
+                source_document="Rules",
+                source_section="Rule 6",
+                corpus_hash="hash",
+                chunk_index=0,
+            )
+        ],
+        corpus_hash="hash",
+    )
+
     payload = {"scan_id": "TEST-POOR-IMG"}
-    response = client.post("/ai/analyze", data=payload, files=get_test_files())
+    with caplog.at_level(logging.INFO, logger="ai_service"):
+        response = client.post("/ai/analyze", data=payload, files=get_test_files())
+
     assert response.status_code == 200
     data = response.json()
-    assert data["compliance"]["status"] == "INCONCLUSIVE"
-    assert data["review_reason"] == "LOW_IMAGE_QUALITY"
+    assert mock_assess.called
+    mock_extract_text.assert_awaited_once()
+    assert "event=image_quality_poor" in caplog.text
+    assert data["success"] is True
+    assert data["compliance"]["status"] == "COMPLIANT"
+    assert any(d["field_name"] == "MRP" and d["extraction_status"] == "FOUND" for d in data["declarations"])
+    assert data["review_reason"] != "LOW_IMAGE_QUALITY"
 
