@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import delete
-from typing import Optional, List
+from typing import Optional, List, Union
 from fastapi import HTTPException
 from uuid import UUID
 
@@ -16,22 +16,22 @@ from app.models.audit_log import AuditLog
 from app.models.manufacturer import Manufacturer
 from app.models.product import Product
 from app.models.officer import Officer
+from app.models.user import User
 
 from app.schemas.ai_result import AIAnalyzeResponse
 from app.clients.ai_client import AIServiceClient
+from app.services.inspection_service import get_inspection
+from app.repositories.inspection_repository import get_inspection as repo_get_inspection
 
 async def process_inspection_analysis(
     db: AsyncSession,
-    inspection_id: UUID,
-    user_id: UUID,
+    inspection_id: Union[UUID, str],
+    current_user: User,
     ai_client: AIServiceClient
 ) -> Inspection:
     
-    # 1. Fetch inspection
-    result = await db.execute(select(Inspection).where(Inspection.id == inspection_id))
-    inspection = result.scalars().first()
-    if not inspection:
-        raise HTTPException(status_code=404, detail="Inspection not found")
+    # 1. Fetch and authorize inspection before any status mutation, file access, or AI call
+    inspection = await get_inspection(db, current_user, inspection_id)
         
     # Check status
     if inspection.review_status == "LOCKED":
@@ -46,7 +46,8 @@ async def process_inspection_analysis(
         raise HTTPException(status_code=400, detail="No images uploaded for this inspection")
         
 
-    
+    actor_user_id = current_user.id
+
     # 2. Update status to PROCESSING
     inspection.processing_status = "PROCESSING"
     await db.commit()
@@ -277,14 +278,16 @@ async def process_inspection_analysis(
         
         # Audit log
         db.add(AuditLog(
-            inspection_id=inspection.id,
-            user_id=user_id,
+            inspection_id=insp_id,
+            user_id=actor_user_id,
             action="AI_ANALYSIS_COMPLETED",
-            metadata_col={"scan_id": inspection.inspection_code, "compliance": ai_response.compliance.status}
+            metadata_col={"scan_id": insp_code, "compliance": ai_response.compliance.status}
         ))
         await db.commit()
         
-        return inspection
+        # Expire cached relationships so re-analysis reloads fresh declarations/violations/evidence
+        db.expire(inspection)
+        return await repo_get_inspection(db, insp_id)
 
     except Exception as e:
         import traceback
@@ -301,7 +304,7 @@ async def process_inspection_analysis(
         
         db.add(AuditLog(
             inspection_id=insp_id,
-            user_id=user_id,
+            user_id=actor_user_id,
             action="AI_ANALYSIS_FAILED",
             metadata_col={"scan_id": insp_code, "error": str(e)}
         ))

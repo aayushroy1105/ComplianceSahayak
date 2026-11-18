@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from uuid import UUID
 from datetime import datetime
-from typing import Optional, Tuple, Sequence
+from typing import Optional, Tuple, Sequence, Union
 from app.models.inspection import Inspection
 from app.models.user import User
 from app.schemas.inspection import InspectionCreateRequest
@@ -48,21 +48,32 @@ async def create_inspection(db: AsyncSession, current_user: User, data: Inspecti
 
     return created_inspection
 
-async def get_inspection(db: AsyncSession, current_user: User, inspection_id: str) -> Inspection:
+def authorize_inspection_access(current_user: User, inspection: Inspection) -> None:
+    """Enforce role-based access policy for an inspection."""
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not have access to this inspection")
+    if current_user.role in ("OFFICER", "ADMIN"):
+        return
+    if current_user.role == "USER" and inspection.user_id == current_user.id:
+        return
+    raise HTTPException(status_code=403, detail="Forbidden: You do not have access to this inspection")
+
+async def get_inspection(db: AsyncSession, current_user: User, inspection_id: Union[str, UUID]) -> Inspection:
     # inspection_id can be UUID or code
-    try:
-        parsed_uuid = UUID(inspection_id)
-        inspection = await repo_get_inspection(db, parsed_uuid)
-    except ValueError:
-        inspection = await get_inspection_by_code(db, inspection_id)
-        
+    if isinstance(inspection_id, UUID):
+        inspection = await repo_get_inspection(db, inspection_id)
+    else:
+        try:
+            parsed_uuid = UUID(str(inspection_id))
+            inspection = await repo_get_inspection(db, parsed_uuid)
+        except ValueError:
+            inspection = await get_inspection_by_code(db, str(inspection_id))
+
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
-        
-    # Enforce authorization
-    if current_user.role == "USER" and inspection.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Forbidden: You do not have access to this inspection")
-        
+
+    authorize_inspection_access(current_user, inspection)
+
     return inspection
 
 async def list_inspections(

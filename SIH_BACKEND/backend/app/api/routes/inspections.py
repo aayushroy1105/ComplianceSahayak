@@ -228,13 +228,12 @@ async def analyze_inspection_endpoint(
     """
     Trigger AI analysis for an inspection.
     """
-    await process_inspection_analysis(
+    return await process_inspection_analysis(
         db=db,
         inspection_id=inspection_id,
-        user_id=current_user.id,
+        current_user=current_user,
         ai_client=ai_client_instance
     )
-    return await service_get_inspection(db, current_user, inspection_id)
 @router.get("/{inspection_id}/violations", response_model=list[ViolationResponse])
 async def get_inspection_violations_endpoint(
     inspection_id: str,
